@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:320px;background:#111;color:#fff;font-family:-apple-system,system-ui,sans-serif;padding:16px}
+h1{font-size:14px;font-weight:600;letter-spacing:.1em;margin-bottom:12px;opacity:.9}
+.count{font-size:28px;font-weight:700;margin-bottom:4px}
+.sub{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:16px}
+.queue{max-height:200px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.queue img{width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,.1)}
+.btn{width:100%;padding:10px;border:none;border-radius:8px;font:13px -apple-system,system-ui,sans-serif;cursor:pointer;margin-bottom:8px;font-weight:600}
+.btn.primary{background:#fff;color:#000}
+.btn.secondary{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+.btn.danger{background:rgba(200,50,50,.3);color:#f88}
+.btn.scrape{background:linear-gradient(135deg,#ff0000 0%,#cc0000 100%);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;letter-spacing:.03em}
+.btn.scrape:hover{filter:brightness(1.1)}
+.btn.scrape:disabled{opacity:.4;cursor:not-allowed;filter:none}
+.divider{height:1px;background:rgba(255,255,255,.06);margin:12px 0}
+.section-label{font-size:10px;font-weight:600;letter-spacing:.15em;color:rgba(255,255,255,.25);margin-bottom:8px}
+.empty{font-size:13px;color:rgba(255,255,255,.3);text-align:center;padding:20px 0}
+.tip{font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-top:8px;line-height:1.4}
+.yt-info{font-size:11px;color:rgba(255,255,255,.35);text-align:center;margin-top:4px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<h1>MOODBOARD CLIPPER</h1>
+
+<!-- Scrape Section -->
+<div id="scrapeSection" style="display:none">
+  <div class="section-label">CHANNEL SCRAPER</div>
+  <button class="btn scrape" id="scrapeBtn">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M21.58 7.19c-.23-.86-.91-1.54-1.77-1.77C18.25 5 12 5 12 5s-6.25 0-7.81.42c-.86.23-1.54.91-1.77 1.77C2 8.75 2 12 2 12s0 3.25.42 4.81c.23.86.91 1.54 1.77 1.77C5.75 19 12 19 12 19s6.25 0 7.81-.42c.86-.23 1.54-.91 1.77-1.77C22 15.25 22 12 22 12s0-3.25-.42-4.81z"/><path d="M10 15l5-3-5-3v6z" fill="#111"/></svg>
+    Scrape This Channel
+  </button>
+  <div class="yt-info" id="scrapeInfo">Saves all video thumbnails at 1920×1080</div>
+  <div class="divider"></div>
+</div>
+
+<div class="count" id="count">0</div>
+<div class="sub">images queued</div>
+<div class="queue" id="queue"></div>
+<div id="actions"></div>
+<div class="tip">Right-click any image &rarr; "Save to Moodboard"<br>Images auto-import when Moodboard is open</div>
+<script src="popup.js"></script>
+</body>
+</html>

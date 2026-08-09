@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Moodboard Restore</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111;color:#fff;font-family:-apple-system,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.box{background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:40px;max-width:500px;width:100%;text-align:center}
+h1{font-size:18px;font-weight:600;letter-spacing:.1em;margin-bottom:8px}
+.sub{color:rgba(255,255,255,.4);font-size:13px;margin-bottom:30px}
+.btn{display:inline-block;padding:14px 32px;background:#fff;color:#000;border:none;border-radius:10px;font:600 14px -apple-system,system-ui,sans-serif;cursor:pointer;margin-bottom:20px}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.3;cursor:default}
+input[type=file]{display:none}
+.bar-bg{height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin:12px 0}
+.bar-fill{height:100%;background:#4CAF50;border-radius:4px;width:0;transition:width 300ms}
+.status{font-size:13px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.5}
+.done{color:#4CAF50;font-size:15px;font-weight:600;margin-top:16px}
+.err{color:#f44;font-size:13px;margin-top:12px}
+#prog{display:none;margin-top:20px}
+</style></head><body>
+<div class="box">
+    <h1>MOODBOARD RESTORE</h1>
+    <div class="sub">Background worker — browser stays responsive</div>
+    <button class="btn" id="pickBtn">Select Backup File</button>
+    <input type="file" accept=".json" id="fileIn">
+    <div id="prog">
+        <div class="bar-bg"><div class="bar-fill" id="fill"></div></div>
+        <div class="status" id="status">Starting...</div>
+    </div>
+    <div id="result"></div>
+</div>
+<script>
+const DB='moodboard_db',STORE='images',CATK='moodboard_cats',SORTK='moodboard_sort';
+
+// Worker: streams file, finds each {...} image object between "images":[ and ]
+const workerCode = `
+self.onmessage = async function(e) {
+    const file = e.data;
+    const reader = file.stream().getReader();
+    const decoder = new TextDecoder();
+    let bytesRead = 0, count = 0;
+
+    // Phase 1: Read first 1000 bytes to extract meta
+    let headerBuf = '';
+    let fullBuf = '';
+    let foundImages = false;
+    let depth = 0, inStr = false, esc = false, objStart = -1;
+    let batch = [];
+
+    function sendBatch() {
+        if (batch.length) {
+            self.postMessage({ type: 'batch', images: batch });
+            batch = [];
+        }
+    }
+
+    // Simple state machine to find image objects
+    // We look for the literal text: "images":[ then track {/} depth
+    function processChunk(text) {
+        for (let i = 0; i < text.length; i++) {
+            if (!foundImages) {
+                // Look for "images":[ in the raw text
+                if (text.charAt(i) === '[' && fullBuf.length < 5000) {
+                    fullBuf += text.substring(0, i);
+                    // Check if we just passed "images":
+                    if (fullBuf.includes('"images"')) {
+                        foundImages = true;
+                        // Continue from here to find objects
+                        text = text.substring(i + 1);
+                        i = -1; // restart loop
+                        continue;
+                    }
+                }
+                if (fullBuf.length < 5000) fullBuf += '';
+                continue;
+            }
+
+            // Inside the images array - find each {...} object
+            const ch = text.charAt(i);
+
+            if (esc) { esc = false; continue; }
+            if (ch === '\\\\' && inStr) { esc = true; continue; }
+
+            if (ch === '"' && !esc) {
+                inStr = !inStr;
+                continue;
+            }
+
+            if (inStr) continue;
+
+            if (ch === '{') {
+                if (depth === 0) objStart = i;
+                depth++;
+            } else if (ch === '}') {
+                depth--;
+                if (depth === 0 && objStart >= 0) {
+                    try {
+                        const obj = JSON.parse(text.substring(objStart, i + 1));
+                        batch.push(obj);
+                        count++;
+                        if (batch.length >= 5) sendBatch();
+                    } catch(ex) {
+                        // Object spans chunks, save remainder
+                    }
+                    objStart = -1;
+                }
+            } else if (ch === ']' && depth === 0) {
+                // End of images array
+                sendBatch();
+                break;
+            }
+        }
+
+        // If we have a partial object, keep it for next chunk
+        if (foundImages && objStart >= 0) {
+            fullBuf = text.substring(objStart);
+            objStart = 0;
+            return true; // has leftover
+        } else if (foundImages) {
+            fullBuf = '';
+        }
+        return false;
+    }
+
+    let leftover = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        bytesRead += value.byteLength;
+        const text = leftover + decoder.decode(value, { stream: true });
+        leftover = '';
+
+        // If we have a partial object from last chunk, prepend
+        if (foundImages && fullBuf) {
+            const combined = fullBuf + text;
+            fullBuf = '';
+            objStart = 0;
+            processChunk(combined);
+            if (fullBuf) leftover = fullBuf;
+            fullBuf = '';
+        } else {
+            processChunk(text);
+            if (fullBuf && foundImages) {
+                leftover = fullBuf;
+                fullBuf = '';
+            }
+        }
+
+        self.postMessage({ type: 'progress', bytes: bytesRead, total: file.size, count: count });
+    }
+
+    sendBatch();
+
+    // Extract meta from header
+    let meta = { categories: [], sort: 'newest' };
+    try {
+        const header = headerBuf || fullBuf || '';
+    } catch(e) {}
+
+    self.postMessage({ type: 'done', total: count });
+};
+`;
+
+// Since Web Workers from blob URLs may not work on file://, let's do it on main thread
+// but with proper yielding via setTimeout
+document.getElementById('pickBtn').onclick = () => document.getElementById('fileIn').click();
+document.getElementById('fileIn').onchange = async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    document.getElementById('pickBtn').disabled = true;
+    document.getElementById('prog').style.display = 'block';
+
+    const status = document.getElementById('status');
+    const fill = document.getElementById('fill');
+    const result = document.getElementById('result');
+
+    // Read first 500 bytes to extract meta
+    const headerSlice = f.slice(0, 500);
+    const headerText = await headerSlice.text();
+    let meta = { categories: [], sort: 'newest' };
+    try {
+        const cm = headerText.match(/"categories":\[([^\]]*)\]/);
+        if (cm) meta.categories = JSON.parse('[' + cm[1] + ']');
+        const sm = headerText.match(/"sort":"([^"]*)"/);
+        if (sm) meta.sort = sm[1];
+    } catch(e) { console.log('meta parse error', e); }
+
+    status.textContent = 'Meta: ' + meta.categories.length + ' categories, sort=' + meta.sort;
+
+    // Open DB and clear
+    const db = await new Promise((ok, no) => {
+        const r = indexedDB.open(DB, 1);
+        r.onupgradeneeded = ev => ev.target.result.createObjectStore(STORE, { keyPath: 'id' });
+        r.onsuccess = () => ok(r.result);
+        r.onerror = () => no(r.error);
+    });
+    await new Promise((ok, no) => {
+        const tx = db.transaction(STORE, 'readwrite');
+        tx.objectStore(STORE).clear();
+        tx.oncomplete = ok;
+        tx.onerror = () => no(tx.error);
+    });
+
+    // Stream-parse: read chunks, find image objects by tracking {/} depth
+    const reader = f.stream().getReader();
+    const decoder = new TextDecoder();
+    let bytesRead = 0, imgCount = 0;
+    let foundImages = false;
+    let carry = ''; // leftover partial object from previous chunk
+    let depth = 0, inStr = false, esc = false, objStart = -1;
+    let batch = [];
+    let lastUI = Date.now();
+
+    async function writeBatch(items) {
+        return new Promise((ok, no) => {
+            const tx = db.transaction(STORE, 'readwrite');
+            const st = tx.objectStore(STORE);
+            items.forEach(im => {
+                if (!im.id) im.id = Math.random().toString(36).substr(2,9);
+                if (im.fav === undefined) im.fav = im.pinned || false;
+                if (!im.palette) im.palette = [];
+                if (!im.categories) im.categories = [];
+                if (!im.note) im.note = '';
+                if (!im.viewCount) im.viewCount = 0;
+                st.put(im);
+            });
+            tx.oncomplete = ok;
+            tx.onerror = () => no(tx.error);
+        });
+    }
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        bytesRead += value.byteLength;
+        const chunk = carry + decoder.decode(value, { stream: true });
+        carry = '';
+
+        if (!foundImages) {
+            const idx = chunk.indexOf('"images":[');
+            if (idx >= 0) {
+                foundImages = true;
+                // Start parsing after "images":[
+                const startFrom = chunk.substring(idx + 10);
+                carry = startFrom;
+            }
+            // Keep scanning next chunk
+            if (!foundImages) continue;
+            continue; // process carry in next iteration
+        }
+
+        // Parse this chunk character by character
+        for (let i = 0; i < chunk.length; i++) {
+            const ch = chunk[i];
+
+            if (esc) { esc = false; continue; }
+            if (ch === '\\' && inStr) { esc = true; continue; }
+            if (ch === '"') { inStr = !inStr; continue; }
+            if (inStr) continue;
+
+            if (ch === '{') {
+                if (depth === 0) objStart = i;
+                depth++;
+            } else if (ch === '}') {
+                depth--;
+                if (depth === 0 && objStart >= 0) {
+                    const objStr = chunk.substring(objStart, i + 1);
+                    try {
+                        batch.push(JSON.parse(objStr));
+                        imgCount++;
+                    } catch(e) {
+                        // parse error - skip
+                    }
+                    objStart = -1;
+
+                    if (batch.length >= 5) {
+                        await writeBatch(batch);
+                        batch = [];
+                    }
+                }
+            } else if (ch === ']' && depth === 0) {
+                // End of images array
+                break;
+            }
+        }
+
+        // If we're mid-object at end of chunk, carry it over
+        if (depth > 0 && objStart >= 0) {
+            carry = chunk.substring(objStart);
+            depth = 0;
+            objStart = -1;
+            inStr = false;
+            esc = false;
+            // Need to re-parse the carry from scratch
+        } else if (depth > 0) {
+            // We lost track, reset
+            carry = '';
+            depth = 0;
+            objStart = -1;
+            inStr = false;
+            esc = false;
+        }
+
+        // Update UI periodically
+        if (Date.now() - lastUI > 300) {
+            const pct = Math.round(bytesRead / f.size * 100);
+            fill.style.width = pct + '%';
+            status.textContent = 'Parsing & writing: ' + imgCount + ' images (' + pct + '%)';
+            await new Promise(r => setTimeout(r, 0)); // yield to browser
+            lastUI = Date.now();
+        }
+    }
+
+    // Write remaining
+    if (batch.length) await writeBatch(batch);
+
+    // Save meta
+    localStorage.setItem(CATK, JSON.stringify(meta.categories));
+    localStorage.setItem(SORTK, meta.sort);
+    db.close();
+
+    fill.style.width = '100%';
+    status.textContent = '';
+    result.innerHTML = '<div class="done">Restored ' + imgCount + ' images!</div>' +
+        '<div class="status" style="margin-top:8px">Categories: ' + meta.categories.join(', ') + '</div>' +
+        '<div class="status" style="margin-top:16px"><a href="index.html" style="color:#8cf;font-size:15px;font-weight:600">→ Open Moodboard ←</a></div>';
+};
+</script></body></html>
