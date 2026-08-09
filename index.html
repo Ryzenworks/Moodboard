@@ -92,7 +92,7 @@
             font: 13px var(--font);
             padding: 6px 28px 6px 10px;
             width: 160px;
-            transition: width 250ms;
+            transition: width 250ms cubic-bezier(.2,0,.4,1);
             outline: none
         }
 
@@ -155,6 +155,7 @@
             display: none;
             z-index: 110;
             overflow: hidden
+          animation: ctxIn 100ms cubic-bezier(.2,0,.4,1)
         }
 
         .sort-panel.open {
@@ -289,7 +290,7 @@
             font-size: 13px;
             color: rgba(255,255,255,.6);
             cursor: pointer;
-            transition: background 120ms, color 120ms, border-left-color 120ms;
+            transition: background 120ms, color 120ms, border-left-color 120ms, padding-left 120ms;
             border: none;
             background: none;
             font-family: var(--font);
@@ -362,7 +363,7 @@
             color: rgba(255, 255, 255, .7);
             cursor: pointer;
             white-space: nowrap;
-            transition: all 150ms;
+            transition: background 150ms, color 150ms;
             border: none;
             font-family: var(--font);
             user-select: none
@@ -422,7 +423,7 @@
             border-radius: 50%;
             cursor: pointer;
             border: 2px solid transparent;
-            transition: transform 150ms, border-color 150ms;
+            transition: transform 150ms cubic-bezier(.2,0,.4,1), border-color 150ms;
             flex-shrink: 0
         }
 
@@ -472,7 +473,12 @@
             content-visibility: auto;
             contain-intrinsic-size: auto 300px;
             contain: layout style paint;
-            transform: translateZ(0)
+            transform: translateZ(0);
+            transition: opacity 180ms ease, transform 180ms ease
+        }
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(6px) }
+            to { opacity: 1; transform: none }
         }
 
         .card img {
@@ -580,7 +586,7 @@
             border-radius: var(--r);
             pointer-events: none;
             z-index: 4;
-            transition: opacity 100ms ease-out
+            transition: opacity 120ms cubic-bezier(.2,0,.4,1)
         }
 
         .card:hover .card-overlay {
@@ -645,7 +651,7 @@
             align-items: center;
             justify-content: center;
             position: absolute;
-            transition: background 120ms
+            transition: background 120ms, transform 100ms cubic-bezier(.2,0,.4,1)
         }
 
         .ov-btn:hover {
@@ -1072,7 +1078,7 @@
             font-size: 13px;
             color: #fff;
             pointer-events: auto;
-            animation: toastIn 180ms ease-out
+            animation: toastIn 200ms cubic-bezier(.2,0,.4,1); will-change: transform, opacity
         }
 
         @keyframes toastIn {
@@ -1246,7 +1252,7 @@
             height: 100%;
             background: linear-gradient(90deg, #666, #fff);
             border-radius: 3px;
-            transition: width 200ms;
+            transition: width 300ms cubic-bezier(.2,0,.4,1);
             width: 0
         }
 
@@ -1277,7 +1283,7 @@
             position: fixed;
             bottom: 20px;
             left: 50%;
-            transform: translateX(-50%) translateY(80px);
+            transform: translateX(-50%) translateY(20px); opacity: 0;
             background: rgba(18, 18, 18, .97);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, .12);
@@ -1292,7 +1298,7 @@
         }
 
         #select-bar.show {
-            transform: translateX(-50%) translateY(0)
+            transform: translateX(-50%) translateY(0); opacity: 1
         }
 
         .sel-count {
@@ -1344,7 +1350,7 @@
             padding: 20px;
             overflow-y: auto;
             transform: translateX(100%);
-            transition: transform 250ms ease;
+            transition: transform 280ms cubic-bezier(.32,.72,0,1);
             scrollbar-width: thin;
             scrollbar-color: rgba(255,255,255,.08) transparent
         }
@@ -1412,7 +1418,7 @@
     </div>
     <div id="drop-overlay"><span>Drop images anywhere</span></div>
     <div id="lightbox-overlay">
-        <div id="lightbox"><button class="lb-close" id="lbClose">×</button><button class="lb-nav lb-prev" id="lbPrev">←</button><button class="lb-nav lb-next" id="lbNext"></button></div>
+        <div id="lightbox"><button class="lb-close" id="lbClose"></button><button class="lb-nav lb-prev" id="lbPrev"></button><button class="lb-nav lb-next" id="lbNext"></button></div>
     </div>
     <div id="ctx-menu"></div>
     <div id="stats-drawer"></div>
@@ -1568,7 +1574,7 @@
         function hideProg() { $('#progress-overlay').classList.remove('active') }
         function addBatch(files) { if (!files.length) return; pushU(); let done = 0, added = 0, skip = 0; const n = files.length, CH = 10; showProg('Processing ' + n + ' images...', n); function go(si) { const ei = Math.min(si + CH, n); let wait = ei - si; for (let i = si; i < ei; i++) { const f = files[i], rd = new FileReader(); rd.onload = function () { const h = hash(rd.result); if (!hashSet.has(h)) { hashSet.add(h); const im = { id: uid(), src: rd.result, filename: f.name || 'image.png', timestamp: Date.now() + i, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h }; imgs.push(im); imgMap.set(im.id, im); _dirty.add(im.id); added++ } else skip++; done++; wait--; updProg(done, n); if (wait === 0) { if (ei < n) requestAnimationFrame(function () { go(ei) }); else { hideProg(); save(); render(); toast('Added ' + added + (skip ? ' (' + skip + ' dupes)' : '')) } } }; rd.onerror = function () { done++; wait--; skip++; updProg(done, n); if (wait === 0) { if (ei < n) requestAnimationFrame(function () { go(ei) }); else { hideProg(); save(); render(); toast('Added ' + added + (skip ? ' (' + skip + ' skipped)' : '')) } } }; rd.readAsDataURL(f) } } go(0) }
         function delImg(id) { pushU(); const im = imgMap.get(id); if (im) hashSet.delete(im.hash); const _di = imgs.findIndex(x => x.id === id); if (_di > -1) imgs.splice(_di, 1); imgMap.delete(id); filtered = filtered.filter(x => x.id !== id); sorted = sorted.filter(x => x.id !== id); const el = $(`[data-id="${id}"]`); if (el) { el.style.opacity = '0'; el.style.transform = 'scale(.9)'; setTimeout(() => el.remove(), 180) } dbDelete(id).catch(() => {}); _fullSave = true; save(); $('#imgCount').textContent = filtered.length + ' images'; toast('Deleted — Ctrl+Z to undo') }
-        function mkCard(im) { const d = document.createElement('div'); d.className = 'card'; d.dataset.id = im.id; d.innerHTML = `<div class="badges">${im.fav ? '<div class="badge-icon badge-fav">' + ICO.star + '</div>' : ''}</div><div class="card-overlay"><button class="ov-btn ov-fav">${im.fav ? ICO.star : ICO.starO}</button><button class="ov-btn ov-del">${ICO.close}<svg class="del-ring" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13"/></svg></button><button class="ov-btn ov-zoom">${ICO.zoom}</button><button class="ov-btn ov-dl">${ICO.dl}</button></div><img src="${im.src}" alt="${im.filename}" decoding="async" loading="lazy"><div class="palette-strip">${im.palette.map(c => `<div class="swatch" style="background:${c}"></div>`).join('')}</div>${(im.categories.length || im.note) ? `<div class="meta"><div class="tags">${im.categories.slice(0, 3).map(c => `<span class="tag">${c}<span class="tag-x" data-c="${c}">×</span></span>`).join('')}${im.categories.length > 3 ? `<span class="tag" style="color:var(--muted)">+${im.categories.length - 3}</span>` : ''}</div>${im.note ? `<p class="note-preview">${im.note}</p>` : ''}</div>` : ''}`; bindCard(d, im); return d }
+        function mkCard(im) { const d = document.createElement('div'); d.className = 'card'; d.style.animation = 'cardIn 180ms cubic-bezier(.2,0,.4,1)'; d.dataset.id = im.id; d.innerHTML = `<div class="badges">${im.fav ? '<div class="badge-icon badge-fav">' + ICO.star + '</div>' : ''}</div><div class="card-overlay"><button class="ov-btn ov-fav">${im.fav ? ICO.star : ICO.starO}</button><button class="ov-btn ov-del">${ICO.close}<svg class="del-ring" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13"/></svg></button><button class="ov-btn ov-zoom">${ICO.zoom}</button><button class="ov-btn ov-dl">${ICO.dl}</button></div><img src="${im.src}" alt="${im.filename}" decoding="async" loading="lazy"><div class="palette-strip">${im.palette.map(c => `<div class="swatch" style="background:${c}"></div>`).join('')}</div>${(im.categories.length || im.note) ? `<div class="meta"><div class="tags">${im.categories.slice(0, 3).map(c => `<span class="tag">${c}<span class="tag-x" data-c="${c}">×</span></span>`).join('')}${im.categories.length > 3 ? `<span class="tag" style="color:var(--muted)">+${im.categories.length - 3}</span>` : ''}</div>${im.note ? `<p class="note-preview">${im.note}</p>` : ''}</div>` : ''}`; bindCard(d, im); return d }
         function updateCardMeta(id) { const card = document.querySelector('[data-id="' + id + '"]'); if (!card) return; const im = imgMap.get(id) || imgs.find(x => x.id === id); if (!im) return; let m = card.querySelector('.meta'); if (im.categories.length || im.note) { if (!m) { m = document.createElement('div'); m.className = 'meta'; card.appendChild(m) } m.innerHTML = '<div class="tags">' + im.categories.slice(0, 3).map(c => '<span class="tag">' + c + '<span class="tag-x" data-c="' + c + '">×</span></span>').join('') + (im.categories.length > 3 ? '<span class="tag" style="color:var(--muted)">+' + (im.categories.length - 3) + '</span>' : '') + '</div>' + (im.note ? '<p class="note-preview">' + im.note + '</p>' : ''); m.querySelectorAll('.tag-x').forEach(t => t.onclick = e => { e.stopPropagation(); rmCat(id, t.dataset.c) }) } else if (m) { m.remove() } }
         function bindCard(d, im) { d.onclick = e => { if (e.target.closest('.ov-btn') || e.target.closest('.tag-x') || e.target.closest('.note-preview') || e.target.closest('.note-edit')) return; if (e.ctrlKey || e.metaKey) { e.preventDefault(); if (selected.has(im.id)) selected.delete(im.id); else selected.add(im.id); d.classList.toggle('selected'); updSelBar() } else if (selected.size) { selected.clear(); document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected')); updSelBar() } }; d.oncontextmenu = e => { e.preventDefault(); showCtx(e, im.id) }; const del = d.querySelector('.ov-del'), circ = d.querySelector('.del-ring circle'); let dt; del.onmousedown = e => { e.stopPropagation(); circ.style.transition = 'stroke-dashoffset 600ms linear'; circ.style.strokeDashoffset = '0'; dt = setTimeout(() => delImg(im.id), 600) }; del.onmouseup = del.onmouseleave = () => { clearTimeout(dt); circ.style.transition = 'none'; circ.style.strokeDashoffset = '82' }; d.querySelector('.ov-dl').onclick = e => { e.stopPropagation(); downloadImg(im) }; d.querySelector('.ov-fav').onclick = e => { e.stopPropagation(); pushU(); const x = imgMap.get(im.id) || imgs.find(v => v.id === im.id); if (x) { x.fav = !x.fav; saveDirty(x.id); const btn = d.querySelector('.ov-fav'); btn.innerHTML = x.fav ? ICO.star : ICO.starO; const badges = d.querySelector('.badges'); if (x.fav) { if (!badges.querySelector('.badge-fav')) { const b = document.createElement('div'); b.className = 'badge-icon badge-fav'; b.innerHTML = ICO.star; badges.prepend(b) } } else { const bf = badges.querySelector('.badge-fav'); if (bf) bf.remove() } } }; d.querySelector('.ov-zoom').onclick = e => { e.stopPropagation(); openLB(im.id) }; d.querySelectorAll('.tag-x').forEach(t => t.onclick = e => { e.stopPropagation(); rmCat(im.id, t.dataset.c) }); d.ondblclick = e => { if (e.target.classList.contains('note-preview')) editNote(d, im.id) } }
         function updSelBar() { const bar = $('#select-bar'); if (selected.size) { bar.classList.add('show'); $('#selCount').textContent = selected.size + ' selected' } else { bar.classList.remove('show') } }
@@ -1600,8 +1606,11 @@
         function closeDelModal() { $('#del-modal').style.display = 'none'; pendingDelCat = null }
         $('#delNo').onclick = closeDelModal;
         $('#delYes').onclick = () => { if (pendingDelCat) { delCat(pendingDelCat); filters.delete(pendingDelCat); closeDelModal(); render(); toast('Category deleted') } }; $('#del-modal').onclick = e => { if (e.target.id === 'del-modal') closeDelModal() };
-        function openLB(id) { const i = sorted.findIndex(x => x.id === id); if (i < 0) return; lbIdx = i; const im = sorted[i]; const lb = $('#lightbox'); lb.innerHTML = '<button class="lb-close" id="lbClose">×</button><button class="lb-nav lb-prev" id="lbPrev">←</button><button class="lb-nav lb-next" id="lbNext">â†’</button><div class="lb-img-wrap"><img src="' + im.src + '"></div><div class="lb-info"><div><div class="lb-label">File</div><div class="lb-val">' + im.filename + '</div></div><div><div class="lb-label">Date</div><div class="lb-val">' + new Date(im.timestamp).toLocaleDateString() + '</div></div><div><div class="lb-label">Palette</div><div class="lb-palette">' + im.palette.map(c => '<div style="text-align:center"><div class="lb-swatch" style="background:' + c + '" data-h="' + c + '"></div><div class="lb-swatch-hex">' + c + '</div></div>').join('') + '</div></div><div><div class="lb-label">Categories</div><div class="lb-cats">' + im.categories.map(c => '<span class="chip active">' + c + '</span>').join('') + '</div><div class="lb-add-cat"><input placeholder="Add category..." id="lbCat"><button class="tb-btn" id="lbCatAdd">+</button></div></div><div><div class="lb-label">Note</div><textarea class="lb-note" id="lbNote" placeholder="Add a note...">' + im.note + '</textarea></div><div class="lb-del"><button class="tb-btn danger" id="lbDel">Delete</button></div></div>'; $('#lightbox-overlay').style.display = 'flex'; requestAnimationFrame(() => $('#lightbox-overlay').classList.add('open')); $('#lbClose').onclick = closeLB; $('#lbPrev').onclick = () => navLB(-1); $('#lbNext').onclick = () => navLB(1); lb.querySelectorAll('.lb-swatch').forEach(s => s.onclick = () => { navigator.clipboard.writeText(s.dataset.h); toast('Copied ' + s.dataset.h, 800) }); const nt = $('#lbNote'), sn = debounce(() => { pushU(); im.note = nt.value; save(); updateCardMeta(im.id) }, 300); nt.oninput = sn; const ci = $('#lbCat'), ca = $('#lbCatAdd'), doAdd = () => { if (ci.value.trim()) { addCatTo(im.id, ci.value.trim()); openLB(im.id) } }; ci.onkeydown = e => { if (e.key === 'Enter') doAdd() }; ca.onclick = doAdd; $('#lbDel').onclick = () => { closeLB(); delImg(im.id) } }
-        function closeLB() { const o = $('#lightbox-overlay'); o.classList.remove('open'); setTimeout(() => { o.style.display = 'none'; lbIdx = -1 }, 200) }
+        function openLB(id) { const i = sorted.findIndex(x => x.id === id); if (i < 0) return; lbIdx = i; const im = sorted[i]; const lb = $('#lightbox'); lb.innerHTML = '<button class="lb-close" id="lbClose">×</button><button class="lb-nav lb-prev" id="lbPrev">←</button><button class="lb-nav lb-next" id="lbNext">â†’</button><div class="lb-img-wrap"><img src="' + im.src + '"></div><div class="lb-info"><div><div class="lb-label">File</div><div class="lb-val">' + im.filename + '</div></div><div><div class="lb-label">Date</div><div class="lb-val">' + new Date(im.timestamp).toLocaleDateString() + '</div></div><div><div class="lb-label">Palette</div><div class="lb-palette">' + im.palette.map(c => '<div style="text-align:center"><div class="lb-swatch" style="background:' + c + '" data-h="' + c + '"></div><div class="lb-swatch-hex">' + c + '</div></div>').join('') + '</div></div><div><div class="lb-label">Categories</div><div class="lb-cats">' + im.categories.map(c => '<span class="chip active">' + c + '</span>').join('') + '</div><div class="lb-add-cat"><input placeholder="Add category..." id="lbCat"><button class="tb-btn" id="lbCatAdd">+</button></div></div><div><div class="lb-label">Note</div><textarea class="lb-note" id="lbNote" placeholder="Add a note...">' + im.note + '</textarea></div><div class="lb-del"><button class="tb-btn danger" id="lbDel">Delete</button></div></div>'; requestAnimationFrame(() => $('#lightbox-overlay').classList.add('open'));
+          var _lbC = document.getElementById('lbClose'); if (_lbC) _lbC.innerHTML = ICO.close;
+          var _lbP = document.getElementById('lbPrev'); if (_lbP) _lbP.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/><' + '/svg>';
+          var _lbN = document.getElementById('lbNext'); if (_lbN) _lbN.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/><' + '/svg>'; $('#lbClose').onclick = closeLB; $('#lbPrev').onclick = () => navLB(-1); $('#lbNext').onclick = () => navLB(1); lb.querySelectorAll('.lb-swatch').forEach(s => s.onclick = () => { navigator.clipboard.writeText(s.dataset.h); toast('Copied ' + s.dataset.h, 800) }); const nt = $('#lbNote'), sn = debounce(() => { pushU(); im.note = nt.value; save(); updateCardMeta(im.id) }, 300); nt.oninput = sn; const ci = $('#lbCat'), ca = $('#lbCatAdd'), doAdd = () => { if (ci.value.trim()) { addCatTo(im.id, ci.value.trim()); openLB(im.id) } }; ci.onkeydown = e => { if (e.key === 'Enter') doAdd() }; ca.onclick = doAdd; $('#lbDel').onclick = () => { closeLB(); delImg(im.id) } }
+        function closeLB() { $('#lightbox-overlay').classList.remove('open'); lbIdx = -1 }
         function navLB(d) { if (lbIdx < 0) return; lbIdx = (lbIdx + d + sorted.length) % sorted.length; openLB(sorted[lbIdx].id) }
         $('#lbClose').onclick = closeLB; $('#lbPrev').onclick = () => navLB(-1); $('#lbNext').onclick = () => navLB(1);
         $('#lightbox-overlay').onclick = e => { if (e.target.id === 'lightbox-overlay') closeLB() };
