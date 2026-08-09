@@ -1412,7 +1412,7 @@
     </div>
     <div id="drop-overlay"><span>Drop images anywhere</span></div>
     <div id="lightbox-overlay">
-        <div id="lightbox"><button class="lb-close" id="lbClose">×</button><button class="lb-nav lb-prev" id="lbPrev">←</button><button class="lb-nav lb-next" id="lbNext">→</button></div>
+        <div id="lightbox"><button class="lb-close" id="lbClose">×</button><button class="lb-nav lb-prev" id="lbPrev">←</button><button class="lb-nav lb-next" id="lbNext"></button></div>
     </div>
     <div id="ctx-menu"></div>
     <div id="stats-drawer"></div>
@@ -1836,14 +1836,17 @@
         // Set HTML element icons from ICO constants on load
         (function initIcons() {
           var el;
+          var chevL = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/><' + '/svg>';
+          var chevR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/><' + '/svg>';
+          var gear = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/><' + '/svg>';
           el = document.getElementById('searchClear'); if (el) el.innerHTML = ICO.close;
           el = document.getElementById('selFav'); if (el) el.innerHTML = ICO.star + ' Favourite';
           el = document.getElementById('selDel'); if (el) el.innerHTML = ICO.trash + ' Delete';
           el = document.getElementById('selExport'); if (el) el.innerHTML = ICO.dl + ' Export';
           el = document.getElementById('lbClose'); if (el) el.innerHTML = ICO.close;
-          el = document.getElementById('lbPrev'); if (el) el.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/><\/svg>';
-          el = document.getElementById('lbNext'); if (el) el.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/><\/svg>';
-          el = document.getElementById('settingsBtn'); if (el) el.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/><\/svg>';
+          el = document.getElementById('lbPrev'); if (el) el.innerHTML = chevL;
+          el = document.getElementById('lbNext'); if (el) el.innerHTML = chevR;
+          el = document.getElementById('settingsBtn'); if (el) el.innerHTML = gear;
           el = document.getElementById('sortLabel'); if (el) { var sl = (SORTS.find(function(s){return s[0]===sort_}) || SORTS[0]); if (sl) el.innerHTML = sl[1]; }
         })();
     </script>
