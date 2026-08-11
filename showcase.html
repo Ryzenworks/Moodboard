@@ -962,6 +962,7 @@ function setupStripDrop() {
   });
   strip.addEventListener('drop', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     strip.classList.remove('drag-over');
     if (e.dataTransfer.files && e.dataTransfer.files.length) {
       readFilesAsImages(e.dataTransfer.files);

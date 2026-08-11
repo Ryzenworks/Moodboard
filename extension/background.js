@@ -660,38 +660,58 @@ chrome.contextMenus.onClicked.addListener(async (info, sourceTab) => {
 // ─── AUTO-FLUSH QUEUE ───────────────────────────
 // When user opens/reloads the moodboard, flush any queued images into it
 
+
+let _flushing = false;
 async function flushQueue(tabId) {
-  const { moodboard_queue = [] } = await chrome.storage.local.get('moodboard_queue');
-  if (!moodboard_queue.length) return;
+  if (_flushing) return; // prevent concurrent flush
+  _flushing = true;
+  try {
+    const { moodboard_queue = [] } = await chrome.storage.local.get('moodboard_queue');
+    if (!moodboard_queue.length) { _flushing = false; return; }
 
-  let injected = 0;
-  for (const item of moodboard_queue) {
-    const ok = await injectImage(tabId, item.src, item.filename);
-    if (ok) injected++;
-    // Small delay between injections to not overwhelm
-    await new Promise(r => setTimeout(r, 300));
-  }
-
-  if (injected > 0) {
+    // Clear queue FIRST to prevent re-flush of same items
     await chrome.storage.local.set({ moodboard_queue: [] });
     await updateBadge();
-    // Show toast in the moodboard tab
-    try {
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        world: 'MAIN',
-        func: (n) => { if (typeof toast === 'function') toast('Imported ' + n + ' queued image' + (n > 1 ? 's' : '') + ' from extension'); },
-        args: [injected]
-      });
-    } catch (e) {}
+
+    let injected = 0;
+    const failed = [];
+    for (const item of moodboard_queue) {
+      const ok = await injectImage(tabId, item.src, item.filename);
+      if (ok) injected++;
+      else failed.push(item);
+      // Small delay between injections to not overwhelm
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    // Re-queue any that failed
+    if (failed.length) {
+      const { moodboard_queue: current = [] } = await chrome.storage.local.get('moodboard_queue');
+      await chrome.storage.local.set({ moodboard_queue: [...current, ...failed] });
+      await updateBadge();
+    }
+
+    if (injected > 0) {
+      // Show toast in the moodboard tab
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          world: 'MAIN',
+          func: (n) => { if (typeof toast === 'function') toast('Imported ' + n + ' queued image' + (n > 1 ? 's' : '') + ' from extension'); },
+          args: [injected]
+        });
+      } catch (e) {}
+    }
+  } finally {
+    _flushing = false;
   }
 }
 
-// Auto-flush when moodboard tab finishes loading
+// Auto-flush when moodboard tab finishes loading (debounced)
+let _flushTimer = null;
 chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
   if (info.status === 'complete' && isMoodboardUrl(tab.url)) {
-    // Wait for moodboard JS to fully initialize (IndexedDB load + render)
-    setTimeout(() => flushQueue(tabId), 3000);
+    clearTimeout(_flushTimer);
+    _flushTimer = setTimeout(() => flushQueue(tabId), 3000);
   }
 });
 
