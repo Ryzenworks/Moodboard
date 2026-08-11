@@ -22,7 +22,7 @@
   font-size: 15px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 200ms ease;
+  transition: background 200ms ease, color 200ms ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -208,7 +208,7 @@ body {
   font-weight: 500;
   border-radius: 8px;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background var(--transition), color var(--transition);
   width: 100%;
   text-align: left;
 }
@@ -285,7 +285,7 @@ body {
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
   position: relative;
 }
 .color-dot:hover { transform: scale(1.15); }
@@ -310,7 +310,7 @@ body {
   font-weight: 500;
   border-radius: 6px;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
   white-space: nowrap;
 }
 .padding-btn:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
@@ -368,7 +368,7 @@ body {
   font-weight: 600;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
   margin-top: 12px;
   display: flex;
   align-items: center;
@@ -376,7 +376,7 @@ body {
   gap: 8px;
 }
 .save-btn:hover { background: #e8e8e8; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,255,255,0.1); }
-.save-btn:active { transform: translateY(0); }
+.save-btn:active { transform: translateY(0); box-shadow: none; }
 
 .save-btn svg { width: 16px; height: 16px; }
 
@@ -385,10 +385,10 @@ body {
   width: 100%;
   max-width: 900px;
   background: #111;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   position: relative;
-  box-shadow: inset 0 0 60px rgba(0,0,0,0.4), 0 8px 40px rgba(0,0,0,0.4);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 8px 40px rgba(0,0,0,0.4);
   transition: background var(--transition);
 }
 
@@ -420,7 +420,7 @@ body {
 /* ── CANVAS IMAGES ──────────────────── */
 .canvas-img-wrap {
   position: relative;
-  border-radius: 5%;
+  border-radius: 12px;
   overflow: hidden;
   transition: box-shadow var(--transition), opacity 150ms;
   aspect-ratio: 16 / 9;
@@ -485,13 +485,20 @@ body {
 
 /* ── GRID PLACEHOLDER ───────────────── */
 .grid-placeholder {
-  border: 2px dashed rgba(255,255,255,0.1);
+  border: 2px dashed rgba(255,255,255,0.08);
   border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255,255,255,0.1);
-  font-size: 24px;
+  color: rgba(255,255,255,0.08);
+  font-size: 28px;
+  font-weight: 300;
+  transition: border-color var(--transition), color var(--transition);
+  aspect-ratio: 16/9;
+}
+.grid-placeholder:hover {
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.2);
 }
 
 /* ── SOLO TEXT TILE ──────────────────── */
@@ -535,7 +542,7 @@ body {
   overflow: hidden;
   cursor: grab;
   border: 2px solid transparent;
-  transition: all var(--transition);
+  transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
   position: relative;
 }
 .thumb-item:active { cursor: grabbing; }
@@ -603,6 +610,14 @@ body {
 .loading-strip .dot:nth-child(3) { animation-delay: 0.4s; }
 @keyframes pulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
 
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: scale(.95); }
+  to { opacity: 1; transform: none; }
+}
+.canvas-img-wrap {
+  animation: fadeSlideIn 200ms cubic-bezier(.2,0,.4,1);
+}
+
 /* ── TOAST ──────────────────────────── */
 .toast {
   position: fixed;
@@ -617,8 +632,8 @@ body {
   font-size: 13px;
   pointer-events: none;
   opacity: 0;
-  transition: all 300ms ease;
-  backdrop-filter: blur(12px);
+  transition: opacity 300ms ease, transform 300ms ease;
+  backdrop-filter: blur(6px);
   z-index: 999;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -1468,7 +1483,7 @@ function drawGrid(ctx, res, pad, imgs, contentY, contentH) {
   const cols = parseInt(document.getElementById('gridCols').value) || 2;
   const cellW = (res.w - pad * (cols + 1)) / cols;
   const cellH = (contentH - pad * (rows + 1)) / rows;
-  const r = Math.round(cellW * 0.05); // 3% corner radius
+  const r = Math.round(Math.min(cellW, cellH) * 0.025); // 3% corner radius
 
   for (let i = 0; i < rows * cols; i++) {
     const col = i % cols;
@@ -1495,7 +1510,7 @@ function drawCompare(ctx, res, pad, imgs, contentY, contentH) {
   const count = imgs.length;
   const cellH = (contentH - pad * (count + 1)) / count;
   const cellW = res.w - pad * 2;
-  const r = Math.round(cellW * 0.05); // 3% corner radius
+  const r = Math.round(Math.min(cellW, cellH) * 0.02); // 3% corner radius
 
   imgs.forEach((img, i) => {
     const x = pad;
@@ -1508,7 +1523,7 @@ function drawSolo(ctx, res, pad, imgs, contentY, contentH) {
   if (imgs.length === 0) return;
   const img = imgs[0];
   const imgData = canvasImages[0];
-  const r = Math.round(Math.min(res.w, contentH) * 0.05); // 3% corner radius
+  const r = Math.round(Math.min(res.w, contentH) * 0.02); // 3% corner radius
 
   const imgAspect = img.naturalWidth / img.naturalHeight;
   const maxW = res.w - pad * 2;
