@@ -733,11 +733,11 @@ body {
       <span class="settings-label">Grid Layout</span>
       <div class="num-input-row">
         <label>Rows</label>
-        <input type="number" class="num-input" id="gridRows" value="2" min="1" max="6" onchange="renderCanvas()">
+        <input type="number" class="num-input" id="gridRows" value="2" min="1" max="6" oninput="renderCanvas()">
       </div>
       <div class="num-input-row" style="margin-top:6px">
         <label>Columns</label>
-        <input type="number" class="num-input" id="gridCols" value="2" min="1" max="6" onchange="renderCanvas()">
+        <input type="number" class="num-input" id="gridCols" value="2" min="1" max="6" oninput="renderCanvas()">
       </div>
     </div>
 
@@ -937,10 +937,12 @@ function setupStripDrop() {
     }
   });
 
-  // Also allow dropping files on the entire page
+  // Also allow dropping files on the entire page (but NOT if already handled by strip)
   document.body.addEventListener('dragover', (e) => { e.preventDefault(); });
   document.body.addEventListener('drop', (e) => {
     e.preventDefault();
+    // Only import if drop was NOT on the strip (which has its own handler)
+    if (e.target.closest('#bottomStrip')) return;
     if (e.dataTransfer.files && e.dataTransfer.files.length) {
       readFilesAsImages(e.dataTransfer.files);
     }
@@ -1130,18 +1132,21 @@ function renderCanvas() {
 
   // Empty state
   if (canvasImages.length === 0) {
-    previewEmpty.style.opacity = '1';
-    previewEmpty.style.position = 'relative';
-    previewEmpty.style.minHeight = '300px';
-    previewContent.appendChild(previewEmpty);
     if (currentMode === 'grid') {
-      previewEmpty.style.opacity = '0';
+      previewEmpty.style.display = 'none';
       renderGrid(pad, previewContent);
+    } else {
+      previewEmpty.style.opacity = '1';
+      previewEmpty.style.display = '';
+      previewEmpty.style.position = 'relative';
+      previewEmpty.style.minHeight = '300px';
+      previewContent.appendChild(previewEmpty);
     }
     return;
   }
   previewEmpty.style.opacity = '0';
   previewEmpty.style.position = 'absolute';
+  previewEmpty.style.minHeight = '0';
   previewContent.appendChild(previewEmpty);
 
   // Assemble: text on top or bottom, grid in the middle
