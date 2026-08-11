@@ -498,8 +498,10 @@ body {
   aspect-ratio: 16/9;
 }
 .grid-placeholder:hover {
-  border-color: rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.02);
+  cursor: pointer;
 }
 
 /* ── SOLO TEXT TILE ──────────────────── */
@@ -908,6 +910,62 @@ function readFilesAsImages(files) {
   });
 }
 
+// ── PICK IMAGE FOR SPECIFIC GRID SLOT ─
+function pickImageForSlot(slotIdx) {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.multiple = true;
+  inp.accept = 'image/*';
+  inp.onchange = () => {
+    const files = [...inp.files].filter(f => f.type.startsWith('image/'));
+    if (!files.length) return;
+    let loaded = 0;
+    files.forEach((file, fi) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const src = e.target.result;
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement('canvas');
+          const W = img.naturalWidth, H = img.naturalHeight;
+          c.width = W; c.height = H;
+          const cx = c.getContext('2d');
+          cx.drawImage(img, 0, 0);
+          const s = 20;
+          function sampleCorner(sx, sy) {
+            const d = cx.getImageData(sx, sy, Math.min(s, W - sx), Math.min(s, H - sy)).data;
+            let rr = 0, gg = 0, bb = 0, cnt = d.length / 4;
+            for (let i = 0; i < d.length; i += 4) { rr += d[i]; gg += d[i+1]; bb += d[i+2]; }
+            return '#' + [Math.round(rr/cnt), Math.round(gg/cnt), Math.round(bb/cnt)].map(v => Math.min(255,v).toString(16).padStart(2,'0')).join('');
+          }
+          const corners = [sampleCorner(0, 0), sampleCorner(W - s, 0), sampleCorner(0, H - s), sampleCorner(W - s, H - s)];
+          const imgData = {
+            id: 'sc_' + (++_idCounter) + '_' + Date.now(),
+            src: src,
+            filename: file.name,
+            corners: corners,
+            categories: [],
+            fav: false
+          };
+          allImages.push(imgData);
+          // Insert at the specific slot position
+          const insertAt = Math.min(slotIdx + fi, canvasImages.length);
+          canvasImages.splice(insertAt, 0, imgData);
+          loaded++;
+          if (loaded === files.length) {
+            renderStrip();
+            renderCanvas();
+            showToast('Added ' + loaded + ' image' + (loaded > 1 ? 's' : ''));
+          }
+        };
+        img.src = src;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  inp.click();
+}
+
 // ── STRIP DROP ZONE ───────────────────
 function setupStripDrop() {
   const strip = bottomStrip;
@@ -1243,10 +1301,12 @@ function renderGrid(pad, container) {
       addDragSwap(el, i);
       grid.appendChild(el);
     } else {
+      const slotIdx = i;
       const placeholder = document.createElement('div');
       placeholder.className = 'grid-placeholder';
       placeholder.style.aspectRatio = '16/9';
-      placeholder.textContent = '+';
+      placeholder.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+      placeholder.onclick = () => pickImageForSlot(slotIdx);
       grid.appendChild(placeholder);
     }
   }
