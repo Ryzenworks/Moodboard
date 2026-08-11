@@ -388,7 +388,8 @@ body {
   border-radius: 16px;
   overflow: hidden;
   position: relative;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 8px 40px rgba(0,0,0,0.4);
+  outline: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
   transition: background var(--transition);
 }
 
@@ -1483,7 +1484,7 @@ function drawGrid(ctx, res, pad, imgs, contentY, contentH) {
   const cols = parseInt(document.getElementById('gridCols').value) || 2;
   const cellW = (res.w - pad * (cols + 1)) / cols;
   const cellH = (contentH - pad * (rows + 1)) / rows;
-  const r = Math.min(20, Math.round(Math.min(cellW, cellH) * 0.018));
+  const r = 16; // fixed 16px radius per tile
 
   for (let i = 0; i < rows * cols; i++) {
     const col = i % cols;
@@ -1510,7 +1511,7 @@ function drawCompare(ctx, res, pad, imgs, contentY, contentH) {
   const count = imgs.length;
   const cellH = (contentH - pad * (count + 1)) / count;
   const cellW = res.w - pad * 2;
-  const r = Math.min(20, Math.round(Math.min(cellW, cellH) * 0.018));
+  const r = Math.min(16, Math.round(cellH * 0.02)); // proportional, capped at 16
 
   imgs.forEach((img, i) => {
     const x = pad;
@@ -1523,7 +1524,7 @@ function drawSolo(ctx, res, pad, imgs, contentY, contentH) {
   if (imgs.length === 0) return;
   const img = imgs[0];
   const imgData = canvasImages[0];
-  const r = Math.min(24, Math.round(Math.min(res.w, contentH) * 0.015));
+  const r = 20; // clean fixed radius for solo
 
   const imgAspect = img.naturalWidth / img.naturalHeight;
   const maxW = res.w - pad * 2;
