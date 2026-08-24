@@ -4,7 +4,8 @@
 // Match pattern for finding the moodboard tab
 const MB_PATTERNS = ['Moodboard/index.html', 'moodboard/index.html'];
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
+  await chrome.contextMenus.removeAll();
   chrome.contextMenus.create({
     id: 'save-to-moodboard',
     title: 'Save to Moodboard',
