@@ -7,13 +7,8 @@ const MB_PATTERNS = ['Moodboard/index.html', 'moodboard/index.html'];
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'save-to-moodboard',
-    title: 'Save Image to Moodboard',
-    contexts: ['image']
-  });
-  chrome.contextMenus.create({
-    id: 'save-to-moodboard-detect',
-    title: 'Save to Moodboard (detect image)',
-    contexts: ['page', 'frame', 'link', 'video']
+    title: 'Save to Moodboard',
+    contexts: ['image', 'page', 'frame', 'link', 'video']
   });
   chrome.action.setBadgeBackgroundColor({ color: '#4285f4' });
 });
@@ -584,49 +579,33 @@ async function saveImageUrl(srcUrl, sourceTab) {
   }
 }
 
-// Detect the image under cursor — tries content script first, then executeScript fallback
+// Detect the image under cursor via the content script (tracks exact right-click target)
 async function detectImageUnderCursor(tabId) {
-  // Method 1: Ask the content script (it tracks cursor + uses elementsFromPoint)
   try {
     const response = await chrome.tabs.sendMessage(tabId, { action: 'detect-image' });
     if (response && response.url) return response.url;
   } catch (e) {
-    // Content script not loaded (e.g., restricted page)
+    // Content script not loaded — try inline detection
   }
 
-  // Method 2: Inject detection script directly
+  // Fallback: inject a minimal detection at the element under cursor
   try {
     const results = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
-        // Walk :hover chain (innermost first)
-        const hovered = document.querySelectorAll(':hover');
-        for (let i = hovered.length - 1; i >= 0; i--) {
-          const el = hovered[i];
-          if (el.tagName === 'IMG' && el.src) return el.currentSrc || el.src;
-          const img = el.querySelector('img[src]');
+        // Use the last contextmenu event target if available
+        const target = document.__moodboardLastTarget;
+        if (target) {
+          if (target.tagName === 'IMG' && target.src) return target.currentSrc || target.src;
+          const img = target.querySelector && target.querySelector('img[src]');
           if (img && img.src) return img.currentSrc || img.src;
-          if (el.tagName === 'VIDEO' && el.poster) return el.poster;
-          const pic = el.querySelector('picture img, picture source');
-          if (pic) {
-            if (pic.srcset) return pic.srcset.split(',').pop().trim().split(' ')[0];
-            if (pic.src) return pic.src;
-          }
-          const bg = getComputedStyle(el).backgroundImage;
-          if (bg && bg !== 'none') {
-            const m = bg.match(/url\(["']?(.*?)["']?\)/);
-            if (m && m[1] && !m[1].includes('gradient')) return m[1];
+          let parent = target.parentElement;
+          for (let d = 0; parent && d < 5; d++, parent = parent.parentElement) {
+            const pImg = parent.querySelector('img[src]');
+            if (pImg && pImg.src && pImg.naturalWidth > 10) return pImg.currentSrc || pImg.src;
           }
         }
-        // Fallback: largest visible image
-        let best = null, bestA = 0;
-        for (const img of document.querySelectorAll('img[src]')) {
-          const r = img.getBoundingClientRect();
-          if (r.width < 50 || r.height < 50 || r.bottom < 0 || r.top > innerHeight) continue;
-          const a = r.width * r.height;
-          if (a > bestA) { bestA = a; best = img.currentSrc || img.src; }
-        }
-        return best;
+        return null;
       },
       world: 'MAIN'
     });
@@ -638,22 +617,21 @@ async function detectImageUnderCursor(tabId) {
 }
 
 chrome.contextMenus.onClicked.addListener(async (info, sourceTab) => {
-  // Direct image right-click — Chrome gives us the URL
-  if (info.menuItemId === 'save-to-moodboard' && info.srcUrl) {
+  if (info.menuItemId !== 'save-to-moodboard') return;
+
+  // 1. Chrome provides srcUrl for direct <img> right-clicks — always accurate
+  if (info.srcUrl) {
     await saveImageUrl(info.srcUrl, sourceTab);
     return;
   }
 
-  // "detect image" mode — for sites with overlays (Instagram, Pinterest, etc.)
-  if (info.menuItemId === 'save-to-moodboard-detect') {
-    showSaveNotice(sourceTab.id, '🔍 Detecting image...');
-    const imgUrl = await detectImageUnderCursor(sourceTab.id);
-    if (imgUrl) {
-      await saveImageUrl(imgUrl, sourceTab);
-    } else {
-      showSaveNotice(sourceTab.id, '✕ No image found under cursor');
-    }
-    return;
+  // 2. For overlay sites (Instagram, Pinterest etc.) — detect from right-click target
+  showSaveNotice(sourceTab.id, '🔍 Detecting image...');
+  const imgUrl = await detectImageUnderCursor(sourceTab.id);
+  if (imgUrl) {
+    await saveImageUrl(imgUrl, sourceTab);
+  } else {
+    showSaveNotice(sourceTab.id, '✕ No image found — try right-clicking directly on an image');
   }
 });
 
