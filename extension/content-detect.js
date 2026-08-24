@@ -15,6 +15,7 @@
   // Capture exact right-click target + position
   document.addEventListener('contextmenu', e => {
     lastTarget = e.target;
+    document.__moodboardLastTarget = e.target;
     lastX = e.clientX;
     lastY = e.clientY;
   }, true);

@@ -4,15 +4,24 @@
 // Match pattern for finding the moodboard tab
 const MB_PATTERNS = ['Moodboard/index.html', 'moodboard/index.html'];
 
-chrome.runtime.onInstalled.addListener(async () => {
-  await chrome.contextMenus.removeAll();
-  chrome.contextMenus.create({
-    id: 'save-to-moodboard',
-    title: 'Save to Moodboard',
-    contexts: ['image', 'page', 'frame', 'link', 'video']
-  });
-  chrome.action.setBadgeBackgroundColor({ color: '#4285f4' });
-});
+function initContextMenu() {
+  try {
+    chrome.contextMenus.removeAll(() => {
+      chrome.contextMenus.create({
+        id: 'save-to-moodboard',
+        title: 'Save to Moodboard',
+        contexts: ['image', 'page', 'frame', 'link', 'video']
+      });
+    });
+  } catch (e) {}
+  try {
+    chrome.action.setBadgeBackgroundColor({ color: '#4285f4' });
+  } catch (e) {}
+}
+
+chrome.runtime.onInstalled.addListener(initContextMenu);
+chrome.runtime.onStartup.addListener(initContextMenu);
+initContextMenu();
 
 // Convert image URL to base64
 async function fetchAsBase64(url) {
@@ -617,8 +626,12 @@ async function detectImageUnderCursor(tabId) {
   }
 }
 
+let _menuClickLock = false;
 chrome.contextMenus.onClicked.addListener(async (info, sourceTab) => {
   if (info.menuItemId !== 'save-to-moodboard') return;
+  if (_menuClickLock) return;
+  _menuClickLock = true;
+  setTimeout(() => { _menuClickLock = false; }, 600);
 
   // 1. Chrome provides srcUrl for direct <img> right-clicks — always accurate
   if (info.srcUrl) {
