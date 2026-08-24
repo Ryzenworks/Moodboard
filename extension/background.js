@@ -4,24 +4,20 @@
 // Match pattern for finding the moodboard tab
 const MB_PATTERNS = ['Moodboard/index.html', 'moodboard/index.html'];
 
-function initContextMenu() {
-  try {
-    chrome.contextMenus.removeAll(() => {
-      chrome.contextMenus.create({
-        id: 'save-to-moodboard',
-        title: 'Save to Moodboard',
-        contexts: ['image', 'page', 'frame', 'link', 'video']
-      });
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: 'save-to-moodboard',
+      title: 'Save to Moodboard',
+      contexts: ['image', 'page', 'frame', 'link', 'video']
+    }, () => {
+      void chrome.runtime.lastError;
     });
-  } catch (e) {}
+  });
   try {
     chrome.action.setBadgeBackgroundColor({ color: '#4285f4' });
   } catch (e) {}
-}
-
-chrome.runtime.onInstalled.addListener(initContextMenu);
-chrome.runtime.onStartup.addListener(initContextMenu);
-initContextMenu();
+});
 
 // Convert image URL to base64
 async function fetchAsBase64(url) {
@@ -503,11 +499,11 @@ function updateQueuedMetadata(ytVideoId, metadata, status) {
 
 // Show a temporary notification on the source tab (non-intrusive)
 async function showSaveNotice(tabId, message) {
+  if (!tabId) return;
   try {
     await chrome.scripting.executeScript({
       target: { tabId },
       func: (msg) => {
-        // Create a toast notification on the page
         const el = document.createElement('div');
         el.textContent = msg;
         el.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:999999;background:#111;color:#fff;padding:10px 20px;border-radius:10px;font:600 13px -apple-system,system-ui,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.5);opacity:0;transition:opacity 200ms;pointer-events:none;';
@@ -517,52 +513,52 @@ async function showSaveNotice(tabId, message) {
       },
       args: [message]
     });
-  } catch (e) {
-    // Not critical, ignore
-  }
+  } catch (e) {}
 }
 
 // ─── MAIN HANDLER ───────────────────────────────────
 
 async function saveImageUrl(srcUrl, sourceTab) {
+  if (!srcUrl) return;
+  const tabId = sourceTab?.id || null;
   try {
     let base64;
     try {
       base64 = await fetchAsBase64(srcUrl);
     } catch (fetchErr) {
-      // CORS blocked — try capturing via canvas in the page
-      console.warn('[Moodboard] Fetch failed, trying canvas capture:', fetchErr.message);
-      try {
-        const results = await chrome.scripting.executeScript({
-          target: { tabId: sourceTab.id },
-          func: (url) => {
-            return new Promise((resolve, reject) => {
-              const img = new Image();
-              img.crossOrigin = 'anonymous';
-              img.onload = () => {
-                try {
-                  const cv = document.createElement('canvas');
-                  cv.width = img.naturalWidth;
-                  cv.height = img.naturalHeight;
-                  cv.getContext('2d').drawImage(img, 0, 0);
-                  resolve(cv.toDataURL('image/png'));
-                } catch (e) { reject(e); }
-              };
-              img.onerror = () => reject(new Error('Image load failed'));
-              img.src = url;
-            });
-          },
-          args: [srcUrl],
-          world: 'MAIN'
-        });
-        base64 = results?.[0]?.result;
-        if (!base64) throw new Error('Canvas capture returned empty');
-      } catch (canvasErr) {
-        // Last resort: store URL directly (works for public images)
-        console.warn('[Moodboard] Canvas failed too, storing URL directly:', canvasErr.message);
+      if (tabId) {
+        try {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId },
+            func: (url) => {
+              return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                  try {
+                    const cv = document.createElement('canvas');
+                    cv.width = img.naturalWidth;
+                    cv.height = img.naturalHeight;
+                    cv.getContext('2d').drawImage(img, 0, 0);
+                    resolve(cv.toDataURL('image/png'));
+                  } catch (e) { reject(e); }
+                };
+                img.onerror = () => reject(new Error('Image load failed'));
+                img.src = url;
+              });
+            },
+            args: [srcUrl],
+            world: 'MAIN'
+          });
+          base64 = results?.[0]?.result;
+        } catch (canvasErr) {
+          base64 = srcUrl;
+        }
+      } else {
         base64 = srcUrl;
       }
     }
+    if (!base64) base64 = srcUrl;
 
     const filename = getFilename(srcUrl, base64);
     const ytVideoId = extractYouTubeVideoId(srcUrl);
@@ -572,47 +568,44 @@ async function saveImageUrl(srcUrl, sourceTab) {
     if (mbTab) {
       const ok = await injectImage(mbTab.id, base64, filename);
       if (ok) {
-        showSaveNotice(sourceTab.id, '✓ Saved to Moodboard');
+        showSaveNotice(tabId, '✓ Saved to Moodboard');
       } else {
         await queueImage(base64, filename, ytVideoId, null, metadataStatus);
-        showSaveNotice(sourceTab.id, '⏳ Queued — open Moodboard to import');
+        showSaveNotice(tabId, '⏳ Queued — open Moodboard to import');
       }
     } else {
       const count = await queueImage(base64, filename, ytVideoId, null, metadataStatus);
-      showSaveNotice(sourceTab.id, `⏳ Queued (${count}) — open Moodboard to import`);
+      showSaveNotice(tabId, `⏳ Queued (${count}) — open Moodboard to import`);
     }
 
     if (ytVideoId) resolveMetadataInBackground(ytVideoId);
   } catch (err) {
     console.error('Moodboard Saver error:', err);
-    try { showSaveNotice(sourceTab.id, '✕ Failed to save image'); } catch (e) {}
+    try { showSaveNotice(tabId, '✕ Failed to save image'); } catch (e) {}
   }
 }
 
 // Detect the image under cursor via the content script (tracks exact right-click target)
 async function detectImageUnderCursor(tabId) {
+  if (!tabId) return null;
   try {
     const response = await chrome.tabs.sendMessage(tabId, { action: 'detect-image' });
     if (response && response.url) return response.url;
-  } catch (e) {
-    // Content script not loaded — try inline detection
-  }
+  } catch (e) {}
 
-  // Fallback: inject a minimal detection at the element under cursor
   try {
     const results = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
-        // Use the last contextmenu event target if available
-        const target = document.__moodboardLastTarget;
+        const target = document.__moodboardLastTarget || window.__moodboardLastTarget;
         if (target) {
           if (target.tagName === 'IMG' && target.src) return target.currentSrc || target.src;
           const img = target.querySelector && target.querySelector('img[src]');
           if (img && img.src) return img.currentSrc || img.src;
           let parent = target.parentElement;
           for (let d = 0; parent && d < 5; d++, parent = parent.parentElement) {
-            const pImg = parent.querySelector('img[src]');
-            if (pImg && pImg.src && pImg.naturalWidth > 10) return pImg.currentSrc || pImg.src;
+            const pImg = parent.querySelector && parent.querySelector('img[src]');
+            if (pImg && pImg.src && (pImg.naturalWidth > 10 || !pImg.complete)) return pImg.currentSrc || pImg.src;
           }
         }
         return null;
@@ -621,7 +614,6 @@ async function detectImageUnderCursor(tabId) {
     });
     return results?.[0]?.result || null;
   } catch (e) {
-    console.warn('[Moodboard] Image detection failed:', e.message);
     return null;
   }
 }
@@ -633,6 +625,8 @@ chrome.contextMenus.onClicked.addListener(async (info, sourceTab) => {
   _menuClickLock = true;
   setTimeout(() => { _menuClickLock = false; }, 600);
 
+  const tabId = sourceTab?.id || null;
+
   // 1. Chrome provides srcUrl for direct <img> right-clicks — always accurate
   if (info.srcUrl) {
     await saveImageUrl(info.srcUrl, sourceTab);
@@ -640,12 +634,12 @@ chrome.contextMenus.onClicked.addListener(async (info, sourceTab) => {
   }
 
   // 2. For overlay sites (Instagram, Pinterest etc.) — detect from right-click target
-  showSaveNotice(sourceTab.id, '🔍 Detecting image...');
-  const imgUrl = await detectImageUnderCursor(sourceTab.id);
+  if (tabId) showSaveNotice(tabId, '🔍 Detecting image...');
+  const imgUrl = tabId ? await detectImageUnderCursor(tabId) : null;
   if (imgUrl) {
     await saveImageUrl(imgUrl, sourceTab);
   } else {
-    showSaveNotice(sourceTab.id, '✕ No image found — try right-clicking directly on an image');
+    if (tabId) showSaveNotice(tabId, '✕ No image found — try right-clicking directly on an image');
   }
 });
 
