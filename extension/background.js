@@ -4,20 +4,21 @@
 // Match pattern for finding the moodboard tab
 const MB_PATTERNS = ['Moodboard/index.html', 'moodboard/index.html'];
 
-chrome.runtime.onInstalled.addListener(() => {
+function createContextMenu() {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'save-to-moodboard',
       title: 'Save to Moodboard',
       contexts: ['image', 'page', 'frame', 'link', 'video']
-    }, () => {
-      void chrome.runtime.lastError;
-    });
+    }, () => void chrome.runtime.lastError);
   });
-  try {
-    chrome.action.setBadgeBackgroundColor({ color: '#4285f4' });
-  } catch (e) {}
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  createContextMenu();
+  try { chrome.action.setBadgeBackgroundColor({ color: '#4285f4' }); } catch (e) {}
 });
+chrome.runtime.onStartup.addListener(createContextMenu);
 
 // Convert image URL to base64
 async function fetchAsBase64(url) {
