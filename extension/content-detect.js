@@ -8,70 +8,58 @@
   if (window.__moodboardDetect) return;
   window.__moodboardDetect = true;
 
-  // Store the exact element chain from the right-click event
   let lastTarget = null;
   let lastX = 0, lastY = 0;
 
   // Capture exact right-click target + position
   document.addEventListener('contextmenu', e => {
     lastTarget = e.target;
-    document.__moodboardLastTarget = e.target;
     lastX = e.clientX;
     lastY = e.clientY;
   }, true);
 
-  // Find image from the exact clicked element, then expand search
   function findImageFromTarget() {
-    if (!lastTarget) return findImageAtPoint(lastX, lastY);
-
     // 1. Check the clicked element itself
-    const direct = extractImageFromElement(lastTarget);
-    if (direct) return direct;
-
-    // 2. Walk UP the DOM tree (clicked overlay on top of image)
-    let parent = lastTarget.parentElement;
-    for (let depth = 0; parent && depth < 6; depth++, parent = parent.parentElement) {
-      const img = parent.querySelector('img[src]');
-      if (img && img.src && img.naturalWidth > 10) return getBestSrc(img);
-      // Check background image on parent
-      const bgUrl = getBgImage(parent);
-      if (bgUrl) return bgUrl;
+    if (lastTarget) {
+      const direct = extractImageFromElement(lastTarget);
+      if (direct) return direct;
     }
 
-    // 3. Use elementsFromPoint at click coords (pierces overlays)
-    return findImageAtPoint(lastX, lastY);
+    // 2. elementsFromPoint — pierces overlays, finds the EXACT image
+    //    under the click coords (Instagram, Pinterest, etc.)
+    const pointResult = findImageAtPoint(lastX, lastY);
+    if (pointResult) return pointResult;
+
+    // 3. Walk UP from click target, pick LARGEST image (not first)
+    //    This avoids grabbing profile pics on Instagram
+    if (lastTarget) {
+      let parent = lastTarget.parentElement;
+      for (let depth = 0; parent && depth < 8; depth++, parent = parent.parentElement) {
+        const largest = findLargestImage(parent);
+        if (largest) return getBestSrc(largest);
+        const bgUrl = getBgImage(parent);
+        if (bgUrl) return bgUrl;
+      }
+    }
+
+    return null;
   }
 
   function extractImageFromElement(el) {
     if (!el) return null;
-
-    // Direct <img>
     if (el.tagName === 'IMG' && el.src && el.naturalWidth > 1) return getBestSrc(el);
-
-    // <video> poster
     if (el.tagName === 'VIDEO' && el.poster) return el.poster;
-
-    // <canvas>
     if (el.tagName === 'CANVAS' && el.width > 10 && el.height > 10) {
       try { return el.toDataURL('image/png'); } catch {}
     }
-
-    // <picture>/<source>
     if (el.tagName === 'PICTURE' || el.tagName === 'SOURCE') {
       const img = el.querySelector ? el.querySelector('img') : null;
       if (img && img.src) return getBestSrc(img);
       const srcset = el.getAttribute('srcset');
       if (srcset) return parseSrcset(srcset);
     }
-
-    // Element has child img
-    const childImg = el.querySelector && el.querySelector('img[src]');
-    if (childImg && childImg.src && childImg.naturalWidth > 1) return getBestSrc(childImg);
-
-    // CSS background-image
     const bgUrl = getBgImage(el);
     if (bgUrl) return bgUrl;
-
     return null;
   }
 
@@ -79,11 +67,36 @@
     if (!x && !y) return null;
     const stack = document.elementsFromPoint(x, y);
     for (const el of stack) {
-      const url = extractImageFromElement(el);
-      if (url) return url;
+      // Direct img or video poster at the point
+      if (el.tagName === 'IMG' && el.src && el.naturalWidth > 1) return getBestSrc(el);
+      if (el.tagName === 'VIDEO' && el.poster) return el.poster;
+      if (el.tagName === 'CANVAS' && el.width > 10 && el.height > 10) {
+        try { return el.toDataURL('image/png'); } catch {}
+      }
+      // Background image at the point
+      const bgUrl = getBgImage(el);
+      if (bgUrl) return bgUrl;
     }
-    // No "largest image" fallback — only return what's at the click point
     return null;
+  }
+
+  // Find the LARGEST image inside a container (by pixel area)
+  // Avoids grabbing tiny profile pics when the post image is nearby
+  function findLargestImage(container) {
+    const imgs = container.querySelectorAll('img[src]');
+    if (!imgs.length) return null;
+    let best = null, bestArea = 0;
+    for (const img of imgs) {
+      // Use naturalWidth if loaded, otherwise getBoundingClientRect
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      const area = w * h;
+      if (area > bestArea && w > 50 && h > 50) {
+        bestArea = area;
+        best = img;
+      }
+    }
+    return best;
   }
 
   function getBgImage(el) {
@@ -97,7 +110,6 @@
     return null;
   }
 
-  // Get the highest resolution src from an img element
   function getBestSrc(img) {
     if (img.srcset) {
       const best = parseSrcset(img.srcset);
@@ -106,7 +118,6 @@
     return img.currentSrc || img.src;
   }
 
-  // Parse srcset and return the largest image URL
   function parseSrcset(srcset) {
     const entries = srcset.split(',').map(s => {
       const parts = s.trim().split(/\s+/);
@@ -119,7 +130,6 @@
     return entries[0]?.url || null;
   }
 
-  // Listen for requests from background.js
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action === 'detect-image') {
       const imgUrl = findImageFromTarget();

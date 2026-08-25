@@ -601,21 +601,31 @@ async function detectImageUnderCursor(tabId) {
     const results = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
-        // Walk :hover chain (innermost first) — proven approach
         const hovered = document.querySelectorAll(':hover');
         for (let i = hovered.length - 1; i >= 0; i--) {
           const el = hovered[i];
+          // Direct img hit
           if (el.tagName === 'IMG' && el.src) return el.currentSrc || el.src;
-          const img = el.querySelector('img[src]');
-          if (img && img.src) return img.currentSrc || img.src;
           if (el.tagName === 'VIDEO' && el.poster) return el.poster;
+          // Background image
           const bg = getComputedStyle(el).backgroundImage;
           if (bg && bg !== 'none') {
             const m = bg.match(/url\(["']?(.*?)["']?\)/);
             if (m && m[1] && !m[1].includes('gradient')) return m[1];
           }
+          // Find LARGEST image in this container (avoids profile pics)
+          const imgs = el.querySelectorAll('img[src]');
+          if (imgs.length) {
+            let best = null, bestArea = 0;
+            for (const img of imgs) {
+              const w = img.naturalWidth || img.width;
+              const h = img.naturalHeight || img.height;
+              const a = w * h;
+              if (a > bestArea && w > 50 && h > 50) { bestArea = a; best = img; }
+            }
+            if (best) return best.currentSrc || best.src;
+          }
         }
-        // NO "largest image" fallback — only return what's under the cursor
         return null;
       },
       world: 'MAIN'
