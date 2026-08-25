@@ -586,29 +586,36 @@ async function saveImageUrl(srcUrl, sourceTab) {
   }
 }
 
-// Detect the image under cursor via the content script (tracks exact right-click target)
+// Detect the image under cursor — content script first, then :hover fallback
 async function detectImageUnderCursor(tabId) {
   if (!tabId) return null;
+
+  // Method 1: Ask the content script (captures exact right-click target)
   try {
     const response = await chrome.tabs.sendMessage(tabId, { action: 'detect-image' });
     if (response && response.url) return response.url;
   } catch (e) {}
 
+  // Method 2: Inject :hover chain detection (works even without content script)
   try {
     const results = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
-        const target = document.__moodboardLastTarget || window.__moodboardLastTarget;
-        if (target) {
-          if (target.tagName === 'IMG' && target.src) return target.currentSrc || target.src;
-          const img = target.querySelector && target.querySelector('img[src]');
+        // Walk :hover chain (innermost first) — proven approach
+        const hovered = document.querySelectorAll(':hover');
+        for (let i = hovered.length - 1; i >= 0; i--) {
+          const el = hovered[i];
+          if (el.tagName === 'IMG' && el.src) return el.currentSrc || el.src;
+          const img = el.querySelector('img[src]');
           if (img && img.src) return img.currentSrc || img.src;
-          let parent = target.parentElement;
-          for (let d = 0; parent && d < 5; d++, parent = parent.parentElement) {
-            const pImg = parent.querySelector && parent.querySelector('img[src]');
-            if (pImg && pImg.src && (pImg.naturalWidth > 10 || !pImg.complete)) return pImg.currentSrc || pImg.src;
+          if (el.tagName === 'VIDEO' && el.poster) return el.poster;
+          const bg = getComputedStyle(el).backgroundImage;
+          if (bg && bg !== 'none') {
+            const m = bg.match(/url\(["']?(.*?)["']?\)/);
+            if (m && m[1] && !m[1].includes('gradient')) return m[1];
           }
         }
+        // NO "largest image" fallback — only return what's under the cursor
         return null;
       },
       world: 'MAIN'
