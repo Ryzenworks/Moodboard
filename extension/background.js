@@ -421,6 +421,8 @@ async function injectImage(tabId, base64, filename) {
       target: { tabId },
       world: 'MAIN',
       func: (src, name) => {
+        // Wait until dbLoad has finished — prevents race where imgs gets overwritten
+        if (!window.__moodboardReady) return 'not-ready';
         if (typeof addOne === 'function') {
           addOne(src, name);
           return true;
@@ -429,8 +431,9 @@ async function injectImage(tabId, base64, filename) {
       },
       args: [base64, filename]
     });
-    // Check if addOne was found and called
-    return results && results[0] && results[0].result === true;
+    const r = results && results[0] && results[0].result;
+    if (r === 'not-ready') return 'not-ready';
+    return r === true;
   } catch (e) {
     console.error('Inject failed:', e);
     return false;
@@ -673,6 +676,20 @@ async function flushQueue(tabId) {
     const { moodboard_queue = [] } = await chrome.storage.local.get('moodboard_queue');
     if (!moodboard_queue.length) { _flushing = false; return; }
 
+    // Wait for moodboard page to finish loading its DB before injecting
+    let ready = false;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      try {
+        const check = await chrome.scripting.executeScript({
+          target: { tabId }, world: 'MAIN',
+          func: () => !!window.__moodboardReady
+        });
+        if (check?.[0]?.result) { ready = true; break; }
+      } catch (e) { break; }
+      await new Promise(r => setTimeout(r, 500));
+    }
+    if (!ready) { _flushing = false; return; } // page never became ready
+
     // Clear queue FIRST to prevent re-flush of same items
     await chrome.storage.local.set({ moodboard_queue: [] });
     await updateBadge();
@@ -681,7 +698,7 @@ async function flushQueue(tabId) {
     const failed = [];
     for (const item of moodboard_queue) {
       const ok = await injectImage(tabId, item.src, item.filename);
-      if (ok) injected++;
+      if (ok === true) injected++;
       else failed.push(item);
       // Small delay between injections to not overwhelm
       await new Promise(r => setTimeout(r, 300));
