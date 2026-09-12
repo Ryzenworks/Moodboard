@@ -19,6 +19,10 @@ chrome.runtime.onInstalled.addListener(() => {
   try { chrome.action.setBadgeBackgroundColor({ color: '#4285f4' }); } catch (e) {}
 });
 chrome.runtime.onStartup.addListener(createContextMenu);
+createContextMenu(); // Clean up on service worker start
+
+// Deduplication cache to prevent double-saving on rapid context menu triggers
+const _recentSaves = new Map();
 
 // Convert image URL to base64
 async function fetchAsBase64(url) {
@@ -405,7 +409,7 @@ async function resolveMetadata(videoId) {
 // Check if a tab URL matches the moodboard
 function isMoodboardUrl(url) {
   if (!url) return false;
-  return MB_PATTERNS.some(p => url.includes(p));
+  return url.toLowerCase().includes('moodboard/index.html');
 }
 
 // Find existing moodboard tab
@@ -524,6 +528,17 @@ async function showSaveNotice(tabId, message) {
 
 async function saveImageUrl(srcUrl, sourceTab) {
   if (!srcUrl) return;
+  const now = Date.now();
+  if (_recentSaves.has(srcUrl) && (now - _recentSaves.get(srcUrl) < 3000)) {
+    console.log('[Moodboard Saver] Prevented duplicate save for:', srcUrl);
+    return;
+  }
+  _recentSaves.set(srcUrl, now);
+  if (_recentSaves.size > 200) {
+    for (const [u, t] of _recentSaves) {
+      if (now - t > 10000) _recentSaves.delete(u);
+    }
+  }
   const tabId = sourceTab?.id || null;
   try {
     let base64;
@@ -571,7 +586,7 @@ async function saveImageUrl(srcUrl, sourceTab) {
     const mbTab = await findMoodboardTab();
     if (mbTab) {
       const ok = await injectImage(mbTab.id, base64, filename);
-      if (ok) {
+      if (ok === true) {
         showSaveNotice(tabId, '✓ Saved to Moodboard');
       } else {
         await queueImage(base64, filename, ytVideoId, null, metadataStatus);
@@ -644,7 +659,7 @@ chrome.contextMenus.onClicked.addListener(async (info, sourceTab) => {
   if (info.menuItemId !== 'save-to-moodboard') return;
   if (_menuClickLock) return;
   _menuClickLock = true;
-  setTimeout(() => { _menuClickLock = false; }, 600);
+  setTimeout(() => { _menuClickLock = false; }, 1200);
 
   const tabId = sourceTab?.id || null;
 

@@ -1620,8 +1620,51 @@
         function doRedo() { if (!redo.length) return toast('Nothing to redo'); try { const snap = imgs.map(x => ({ id: x.id, filename: x.filename, timestamp: x.timestamp, viewCount: x.viewCount, categories: [...x.categories], note: x.note, fav: x.fav, manualOrder: x.manualOrder, palette: [...x.palette], hash: x.hash })); undo.push(snap) } catch (e) { } const old = redo.pop(); const srcMap = {}; imgs.forEach(x => { srcMap[x.id] = x.src }); imgs = old.map(x => ({ ...x, src: srcMap[x.id] || '' })); hashSet.clear(); imgs.forEach(i => hashSet.add(i.hash)); _fullSave = true; save(); render(); toast('Redone', 1500) }
         function updStorage() { if (navigator.storage && navigator.storage.estimate) { navigator.storage.estimate().then(e => { const u = e.usage || 0, q = e.quota || 1, p = Math.min(u / q * 100, 100), f = $('#storageFill'); f.style.width = p + '%'; f.style.background = p > 80 ? '#e55' : p > 50 ? '#a83' : '#444'; $('#storageTip').textContent = (u / 1048576).toFixed(1) + ' MB / ' + (q / 1073741824).toFixed(1) + ' GB' }) } }
         let palQ = 0; const _palIdle = typeof requestIdleCallback === 'function' ? requestIdleCallback : (fn) => setTimeout(fn, 50 + (palQ++ * 20)); function palette(el, id) { const im = imgMap.get(id); if (!im || im.palette.length) return; _palIdle(() => { try { const cv = document.createElement('canvas'); cv.width = cv.height = 80; const ctx = cv.getContext('2d'); ctx.drawImage(el, 0, 0, 80, 80); const px = ctx.getImageData(0, 0, 80, 80).data, bk = {}; const Q = 32; for (let i = 0; i < px.length; i += 4) { const r = Math.round(px[i] / Q) * Q, g = Math.round(px[i + 1] / Q) * Q, b = Math.round(px[i + 2] / Q) * Q; const mn = Math.min(r, g, b), mx = Math.max(r, g, b), sat = mx === 0 ? 0 : (mx - mn) / mx; const lum = (r + g + b) / 3; const w = sat > 0.2 ? 5 : (lum < 30 || lum > 230) ? 0.5 : 1; const k = r + ',' + g + ',' + b; bk[k] = (bk[k] || 0) + w } const ranked = Object.entries(bk).sort((a, b) => b[1] - a[1]); const picked = []; const cdist = (a, b) => { const ar = a.split(',').map(Number), br = b.split(',').map(Number); return Math.sqrt((ar[0] - br[0]) ** 2 + (ar[1] - br[1]) ** 2 + (ar[2] - br[2]) ** 2) }; for (const [k] of ranked) { if (picked.length >= 5) break; if (picked.every(p => cdist(k, p) > 60)) picked.push(k) } const s = picked.map(k => '#' + k.split(',').map(v => Math.min(255, Math.max(0, +v)).toString(16).padStart(2, '0')).join('')); if (im) { im.palette = s; dbSaveOne(id).catch(() => {}); const st = $(`[data-id="${id}"] .palette-strip`); if (st) st.innerHTML = s.map(c => `<div class="swatch" style="background:${c}"></div>`).join('') } } catch (e) { } }, { timeout: 2000 }) }
-        let _addT = 0; const renderSoon = debounce(() => queueRender(), 400);
-        function addOne(src, name) { const h = hash(src); if (hashSet.has(h)) return; hashSet.add(h); const now = Date.now(); const rapid = (now - _addT) < 2000; _addT = now; if (!rapid) pushU(); const im = { id: uid(), src, filename: name || 'image.png', timestamp: now, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h }; imgs.push(im); imgMap.set(im.id, im); filtered.push(im); sorted.unshift(im); _dirty.add(im.id); save(); const card = mkCard(im); card.style.animation = 'cardIn 180ms cubic-bezier(.2,0,.4,1)'; const cols = grid.querySelectorAll('.grid-col'); if (cols.length) { let shortest = cols[0], minH = cols[0].offsetHeight; for (let i = 1; i < cols.length; i++) { if (cols[i].offsetHeight < minH) { minH = cols[i].offsetHeight; shortest = cols[i] } } shortest.prepend(card) } else { renderSoon() } if (!im.palette.length) { const ie = card.querySelector('img'); if (ie) ie.onload = function() { palette(this, im.id) } } morphText($('#imgCount'), filtered.length + ' images'); if (!rapid) toast('Added'); }
+        let _addT = 0, _lastAddSig = '', _lastAddTs = 0; const renderSoon = debounce(() => queueRender(), 400);
+        function addOne(src, name) {
+            if (!src) return;
+            const h = hash(src);
+            const now = Date.now();
+            if (hashSet.has(h)) return;
+            if (imgs.some(x => x.src === src || (x.hash && x.hash === h))) return;
+            const sig = (name || '') + '_' + (src.length > 200 ? (src.slice(0, 80) + '_' + src.length) : src);
+            if (sig === _lastAddSig && (now - _lastAddTs < 2500)) return;
+            _lastAddSig = sig;
+            _lastAddTs = now;
+            hashSet.add(h);
+            const rapid = (now - _addT) < 2000;
+            _addT = now;
+            if (!rapid) pushU();
+            const im = { id: uid(), src, filename: name || 'image.png', timestamp: now, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h };
+            imgs.push(im);
+            imgMap.set(im.id, im);
+            filtered = doFilter();
+            sorted = doSort(filtered);
+            _dirty.add(im.id);
+            save();
+            if (grid.querySelector(`.card[data-id="${im.id}"]`)) return;
+            const card = mkCard(im);
+            card.style.animation = 'cardIn 180ms cubic-bezier(.2,0,.4,1)';
+            const cols = grid.querySelectorAll('.grid-col');
+            if (cols.length) {
+                let shortest = cols[0], minH = cols[0].offsetHeight;
+                for (let i = 1; i < cols.length; i++) {
+                    if (cols[i].offsetHeight < minH) {
+                        minH = cols[i].offsetHeight;
+                        shortest = cols[i]
+                    }
+                }
+                shortest.prepend(card)
+            } else {
+                renderSoon()
+            }
+            if (!im.palette.length) {
+                const ie = card.querySelector('img');
+                if (ie) ie.onload = function() { palette(this, im.id) }
+            }
+            morphText($('#imgCount'), filtered.length + ' images');
+            if (!rapid) toast('Added');
+        }
         // Batch add for scraper: accepts [{src, filename}], ONE save + ONE render
         function addBulkUrls(items) { if (!items || !items.length) return 0; pushU(); let added = 0; for (const it of items) { const h = hash(it.src); if (hashSet.has(h)) continue; hashSet.add(h); const im = { id: uid(), src: it.src, filename: it.filename || 'image.png', timestamp: Date.now() + added, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h }; imgs.push(im); imgMap.set(im.id, im); _dirty.add(im.id); added++; } if (added > 0) { save(); render(); toast('Added ' + added + ' thumbnails'); } return added; }
         function downloadImg(im) { try { const parts = im.src.match(/^data:(image\/[^;]+);base64,(.+)$/); if (!parts) { const a = document.createElement('a'); a.href = im.src; a.download = im.filename; a.click(); return } const mime = parts[1]; const universalTypes = ['image/png','image/jpeg','image/gif']; const needsConvert = !universalTypes.includes(mime); let fn = im.filename || 'image'; const dot = fn.lastIndexOf('.'); const baseName = dot > 0 ? fn.substring(0, dot) : fn; if (needsConvert) { const img = new Image(); img.onload = function() { const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0); cv.toBlob(function(blob) { if (!blob) { toast('Convert failed'); return } const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = baseName + '.png'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 3000) }, 'image/png') }; img.onerror = function() { toast('Failed to load image'); }; img.src = im.src } else { const extMap = {'image/png':'.png','image/jpeg':'.jpg','image/gif':'.gif'}; const ext = extMap[mime] || '.png'; const raw = atob(parts[2]); const arr = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i); const blob = new Blob([arr], { type: mime }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = baseName + ext; a.click(); setTimeout(() => URL.revokeObjectURL(url), 3000) } } catch(e) { toast('Download failed'); console.error(e) } }
@@ -1629,7 +1672,7 @@
         function updProg(d, t) { const p = Math.round(d / t * 100); $('#progSub').textContent = d + ' / ' + t; $('#progFill').style.width = p + '%'; $('#progPct').textContent = p + '%' }
         function hideProg() { $('#progress-overlay').classList.remove('active') }
         function addBatch(files) { if (!files.length) return; pushU(); let done = 0, added = 0, skip = 0; const n = files.length, CH = 10; showProg('Processing ' + n + ' images...', n); function go(si) { const ei = Math.min(si + CH, n); let wait = ei - si; for (let i = si; i < ei; i++) { const f = files[i], rd = new FileReader(); rd.onload = function () { const h = hash(rd.result); if (!hashSet.has(h)) { hashSet.add(h); const im = { id: uid(), src: rd.result, filename: f.name || 'image.png', timestamp: Date.now() + i, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h }; imgs.push(im); imgMap.set(im.id, im); _dirty.add(im.id); added++ } else skip++; done++; wait--; updProg(done, n); if (wait === 0) { if (ei < n) requestAnimationFrame(function () { go(ei) }); else { hideProg(); save(); render(); toast('Added ' + added + (skip ? ' (' + skip + ' dupes)' : '')) } } }; rd.onerror = function () { done++; wait--; skip++; updProg(done, n); if (wait === 0) { if (ei < n) requestAnimationFrame(function () { go(ei) }); else { hideProg(); save(); render(); toast('Added ' + added + (skip ? ' (' + skip + ' skipped)' : '')) } } }; rd.readAsDataURL(f) } } go(0) }
-        function delImg(id) { pushU(); const im = imgMap.get(id); if (im) hashSet.delete(im.hash); const _di = imgs.findIndex(x => x.id === id); if (_di > -1) imgs.splice(_di, 1); imgMap.delete(id); filtered = filtered.filter(x => x.id !== id); sorted = sorted.filter(x => x.id !== id); const el = $(`[data-id="${id}"]`); if (el) { el.style.opacity = '0'; el.style.transform = 'scale(.9)'; setTimeout(() => el.remove(), 180) } dbDelete(id).catch(() => {}); _fullSave = true; save(); morphText($('#imgCount'), filtered.length + ' images'); toast('Deleted — Ctrl+Z to undo') }
+        function delImg(id) { pushU(); const im = imgMap.get(id); if (im) hashSet.delete(im.hash); const _di = imgs.findIndex(x => x.id === id); if (_di > -1) imgs.splice(_di, 1); imgMap.delete(id); filtered = doFilter(); sorted = doSort(filtered); const el = $(`[data-id="${id}"]`); if (el) { el.style.opacity = '0'; el.style.transform = 'scale(.9)'; setTimeout(() => el.remove(), 180) } dbDelete(id).catch(() => {}); _fullSave = true; save(); morphText($('#imgCount'), filtered.length + ' images'); toast('Deleted — Ctrl+Z to undo') }
         function mkCard(im) { const isUrl = im.src && im.src.startsWith('http'); const refPolicy = isUrl ? ' referrerpolicy="no-referrer"' : ''; const d = document.createElement('div'); d.className = 'card'; d.dataset.id = im.id; d.innerHTML = `<div class="badges">${im.fav ? '<div class="badge-icon badge-fav">' + ICO.star + '</div>' : ''}</div><div class="card-overlay"><button class="ov-btn ov-fav">${im.fav ? ICO.star : ICO.starO}</button><button class="ov-btn ov-del">${ICO.close}<svg class="del-ring" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13"/></svg></button><button class="ov-btn ov-zoom">${ICO.zoom}</button><button class="ov-btn ov-dl">${ICO.dl}</button></div><img src="${im.src}" alt="${im.filename}" decoding="async"${refPolicy}><div class="palette-strip">${im.palette.map(c => `<div class="swatch" style="background:${c}"></div>`).join('')}</div>${(im.categories.length || im.note) ? `<div class="meta"><div class="tags">${im.categories.slice(0, 3).map(c => `<span class="tag">${c}<span class="tag-x" data-c="${c}">×</span></span>`).join('')}${im.categories.length > 3 ? `<span class="tag" style="color:var(--muted)">+${im.categories.length - 3}</span>` : ''}</div>${im.note ? `<p class="note-preview">${im.note}</p>` : ''}</div>` : ''}`; const ie = d.querySelector('img'); if (ie) ie.onerror = function() { handleImgError(this, im) }; bindCard(d, im); return d }
         function updateCardMeta(id) { const card = document.querySelector('[data-id="' + id + '"]'); if (!card) return; const im = imgMap.get(id) || imgs.find(x => x.id === id); if (!im) return; let m = card.querySelector('.meta'); if (im.categories.length || im.note) { if (!m) { m = document.createElement('div'); m.className = 'meta'; card.appendChild(m) } m.innerHTML = '<div class="tags">' + im.categories.slice(0, 3).map(c => '<span class="tag">' + c + '<span class="tag-x" data-c="' + c + '">×</span></span>').join('') + (im.categories.length > 3 ? '<span class="tag" style="color:var(--muted)">+' + (im.categories.length - 3) + '</span>' : '') + '</div>' + (im.note ? '<p class="note-preview">' + im.note + '</p>' : ''); m.querySelectorAll('.tag-x').forEach(t => t.onclick = e => { e.stopPropagation(); rmCat(id, t.dataset.c) }) } else if (m) { m.remove() } }
         function bindCard(d, im) { d.onclick = e => { if (e.target.closest('.ov-btn') || e.target.closest('.tag-x') || e.target.closest('.note-preview') || e.target.closest('.note-edit')) return; if (e.ctrlKey || e.metaKey) { e.preventDefault(); if (selected.has(im.id)) selected.delete(im.id); else selected.add(im.id); d.classList.toggle('selected'); updSelBar() } else if (selected.size) { selected.clear(); document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected')); updSelBar() } }; d.oncontextmenu = e => { e.preventDefault(); showCtx(e, im.id) }; const del = d.querySelector('.ov-del'), circ = d.querySelector('.del-ring circle'); let dt; del.onmousedown = e => { e.stopPropagation(); circ.style.transition = 'stroke-dashoffset 600ms linear'; circ.style.strokeDashoffset = '0'; dt = setTimeout(() => delImg(im.id), 600) }; del.onmouseup = del.onmouseleave = () => { clearTimeout(dt); circ.style.transition = 'none'; circ.style.strokeDashoffset = '82' }; d.querySelector('.ov-dl').onclick = e => { e.stopPropagation(); downloadImg(im) }; d.querySelector('.ov-fav').onclick = e => { e.stopPropagation(); pushU(); const x = imgMap.get(im.id) || imgs.find(v => v.id === im.id); if (x) { x.fav = !x.fav; saveDirty(x.id); const btn = d.querySelector('.ov-fav'); btn.innerHTML = x.fav ? ICO.star : ICO.starO; const badges = d.querySelector('.badges'); if (x.fav) { if (!badges.querySelector('.badge-fav')) { const b = document.createElement('div'); b.className = 'badge-icon badge-fav'; b.innerHTML = ICO.star; badges.prepend(b) } } else { const bf = badges.querySelector('.badge-fav'); if (bf) bf.remove() } } }; d.querySelector('.ov-zoom').onclick = e => { e.stopPropagation(); openLB(im.id) }; d.querySelectorAll('.tag-x').forEach(t => t.onclick = e => { e.stopPropagation(); rmCat(im.id, t.dataset.c) }); d.ondblclick = e => { if (e.target.classList.contains('note-preview')) editNote(d, im.id) } }
@@ -1644,7 +1687,7 @@
         function editNote(card, id) { const im = imgMap.get(id) || imgs.find(x => x.id === id); if (!im) return; let m = card.querySelector('.meta'); if (!m) { m = document.createElement('div'); m.className = 'meta'; card.appendChild(m) } const ta = document.createElement('textarea'); ta.className = 'note-edit'; ta.value = im.note; m.innerHTML = ''; m.appendChild(ta); ta.focus(); const done = s => { if (s) { pushU(); im.note = ta.value; saveDirty(id) } updateCardMeta(id) }; ta.onblur = () => done(true); ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); done(true) } if (e.key === 'Escape') done(false) } }
         const SORTS = [['newest', ICO.sortNew + ' Newest'], ['oldest', ICO.sortOld + ' Oldest'], ['views', ICO.fire + ' Most Viewed'], ['fav', ICO.star + ' Favourites'], ['custom', ICO.grid + ' Custom']];
         function doSort(a) { const r = [...a]; switch (sort_) { case 'oldest': r.sort((a, b) => a.timestamp - b.timestamp); break; case 'views': r.sort((a, b) => b.viewCount - a.viewCount); break; case 'fav': r.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || b.timestamp - a.timestamp); break; case 'custom': r.sort((a, b) => a.manualOrder - b.manualOrder); return r; default: r.sort((a, b) => b.timestamp - a.timestamp) } return r }
-        function doFilter() { let a = imgs; if (query) { const q = query.toLowerCase(); a = a.filter(x => x.filename.toLowerCase().includes(q) || x.note.toLowerCase().includes(q) || x.categories.some(c => c.toLowerCase().includes(q))) } if (filters.size) { if (filters.has('__fav')) { a = a.filter(x => x.fav) } else if (filters.has('__uncat')) { a = a.filter(x => x.categories.length === 0) } else { a = a.filter(x => x.categories.some(c => filters.has(c))) } } if (colorFilter.size) a = a.filter(x => x.palette.some(p => { for (const c of colorFilter) if (matchColor(p, c)) return true; return false })); return a }
+        function doFilter() { let a = imgs; if (query) { const q = query.toLowerCase(); a = a.filter(x => x.filename.toLowerCase().includes(q) || x.note.toLowerCase().includes(q) || x.categories.some(c => c.toLowerCase().includes(q))) } if (filters.size) { if (filters.has('__fav')) { a = a.filter(x => x.fav) } else if (filters.has('__uncat')) { a = a.filter(x => x.categories.length === 0) } else { a = a.filter(x => x.categories.some(c => filters.has(c))) } } if (colorFilter.size) a = a.filter(x => x.palette.some(p => { for (const c of colorFilter) if (matchColor(p, c)) return true; return false })); return a === imgs ? [...imgs] : a }
         function getColCount() { const w = innerWidth; return w < 480 ? 1 : w < 768 ? 2 : w < 1100 ? 3 : w < 1500 ? 4 : 5 }
         let renderTimer = null; let _fbarDirty = true; let _renderQueued = false;
         function queueRender() { if (!_renderQueued) { _renderQueued = true; requestAnimationFrame(() => { _renderQueued = false; render() }) } }
@@ -1716,8 +1759,41 @@
         try { const stored = JSON.parse(localStorage.getItem('moodboard_allowed_cats') || 'null'); ALLOWED_CATS = stored ? new Set(stored) : new Set(DEFAULT_CATS); } catch(e) { ALLOWED_CATS = new Set(DEFAULT_CATS); }
         function saveAllowedCats() { localStorage.setItem('moodboard_allowed_cats', JSON.stringify([...ALLOWED_CATS])) }
         cats.forEach(c => ALLOWED_CATS.add(c)); saveAllowedCats();
-        function cleanupCats() { /* no-op: allow all user categories */ }
-        dbLoad().then(d => { imgs = d; imgs.forEach(i => { if (i.pinned !== undefined) { i.fav = i.pinned; delete i.pinned } if (i.fav === undefined) i.fav = false; hashSet.add(i.hash); imgMap.set(i.id, i) }); if (!localStorage.getItem('pal_v2')) { imgs.forEach(i => { i.palette = [] }); localStorage.setItem('pal_v2', '1') } sort_ = localStorage.getItem(SORTK) || 'newest'; if (sort_ === 'pinned') sort_ = 'fav'; $('#sortLabel').innerHTML = (SORTS.find(s => s[0] === sort_) || SORTS[0])[1]; imgs.forEach(i => i.categories.forEach(c => { addCat(c); ALLOWED_CATS.add(c) })); saveAllowedCats(); _lastCols = getColCount(); render(); updStorage(); setTimeout(autoBackup, 3000); window.__moodboardReady = true }).catch(() => { imgs = []; render(); window.__moodboardReady = true });
+        dbLoad().then(d => {
+            const seenKeys = new Set(), cleanD = [], dupIds = [];
+            for (const item of d) {
+                const k = item.hash || (item.src ? hash(item.src) : item.id);
+                if (seenKeys.has(k)) {
+                    dupIds.push(item.id);
+                } else {
+                    seenKeys.add(k);
+                    if (!item.hash && item.src) item.hash = k;
+                    cleanD.push(item);
+                }
+            }
+            if (dupIds.length) {
+                dupIds.forEach(id => dbDelete(id).catch(() => {}));
+                d = cleanD;
+            }
+            imgs = d;
+            imgs.forEach(i => {
+                if (i.pinned !== undefined) { i.fav = i.pinned; delete i.pinned }
+                if (i.fav === undefined) i.fav = false;
+                if (i.hash) hashSet.add(i.hash);
+                imgMap.set(i.id, i)
+            });
+            if (!localStorage.getItem('pal_v2')) { imgs.forEach(i => { i.palette = [] }); localStorage.setItem('pal_v2', '1') }
+            sort_ = localStorage.getItem(SORTK) || 'newest';
+            if (sort_ === 'pinned') sort_ = 'fav';
+            $('#sortLabel').innerHTML = (SORTS.find(s => s[0] === sort_) || SORTS[0])[1];
+            imgs.forEach(i => i.categories.forEach(c => { addCat(c); ALLOWED_CATS.add(c) }));
+            saveAllowedCats();
+            _lastCols = getColCount();
+            render();
+            updStorage();
+            setTimeout(autoBackup, 3000);
+            window.__moodboardReady = true
+        }).catch(() => { imgs = []; render(); window.__moodboardReady = true });
 
         // â”€â”€â”€ FIGMA-STYLE MARQUEE SELECTION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // Click+drag to select. Real-time highlighting.
