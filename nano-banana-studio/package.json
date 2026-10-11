@@ -1,0 +1,21 @@
+{
+  "name": "nano-banana-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local image generation workstation powered by Nano Banana Pro",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently --names server,client --prefix-colors blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "build": "npm run build -w client && npm run build -w server",
+    "clean": "rimraf client/dist server/dist data"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "rimraf": "^6.0.1"
+  }
+}

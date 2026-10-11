@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+nano-banana-studio/node_modules/
+nano-banana-studio/data/
+nano-banana-studio/.idea/
+
+# Firebase cache
+.firebase/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

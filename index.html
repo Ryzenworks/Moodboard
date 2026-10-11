@@ -471,7 +471,9 @@
             overflow: hidden;
             position: relative;
             cursor: grab;
-            transition: opacity 180ms ease, transform 180ms ease
+            transition: opacity 180ms ease, transform 180ms ease;
+            content-visibility: auto;
+            contain-intrinsic-size: auto 300px;
         }
         @keyframes cardIn {
             from { opacity: 0; transform: translateY(6px) }
@@ -483,7 +485,9 @@
             height: auto;
             display: block;
             object-fit: cover;
-            border-radius: var(--r) var(--r) 0 0
+            border-radius: var(--r) var(--r) 0 0;
+            background: rgba(255, 255, 255, .03);
+            min-height: 80px;
         }
 
         .card .palette-strip {
@@ -1413,6 +1417,122 @@
             font-size: 28px;
             opacity: .3
         }
+        /* ── Collaboration UI ── */
+        #collab-bar {
+            display: none;
+            position: sticky; top: 48px; z-index: 199;
+            background: rgba(10,10,10,.92); backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--bar-border);
+            padding: 6px 20px; gap: 12px;
+            align-items: center; font-size: 12px;
+        }
+        .collab-badge {
+            background: rgba(255,255,255,.08); border-radius: 6px;
+            padding: 3px 10px; font-family: 'SF Mono',monospace; font-size: 12px;
+            letter-spacing: 1px; color: var(--accent);
+        }
+        .collab-perm-tag {
+            font-size: 11px; opacity: .6;
+        }
+        #collab-users { display: flex; gap: 4px; align-items: center; }
+        .presence-dot {
+            width: 26px; height: 26px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700; color: #fff;
+            border: 2px solid rgba(0,0,0,.3);
+            cursor: default; transition: transform .15s;
+        }
+        .presence-dot:hover { transform: scale(1.15); }
+        #collab-user-count { font-size: 11px; opacity: .5; margin-left: 4px; }
+        .collab-bar-spacer { flex: 1; }
+        .collab-bar-btn {
+            background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1);
+            color: var(--accent); border-radius: 6px; padding: 4px 12px;
+            font-size: 11px; cursor: pointer; transition: background .15s;
+        }
+        .collab-bar-btn:hover { background: rgba(255,255,255,.15); }
+        .collab-bar-btn.danger { border-color: rgba(255,80,80,.3); color: #f66; }
+        .collab-bar-btn.danger:hover { background: rgba(255,80,80,.15); }
+        #collab-owner-controls { display: none; gap: 6px; }
+
+        /* Collab button in topbar */
+        #collabBtn {
+            background: none; border: 1px solid rgba(255,255,255,.1);
+            color: var(--accent); border-radius: 8px; padding: 4px 8px;
+            cursor: pointer; font-size: 14px; transition: background .15s, border-color .15s;
+            display: flex; align-items: center; gap: 4px;
+        }
+        #collabBtn:hover { background: rgba(255,255,255,.08); }
+        #collabBtn.active { border-color: #43a047; background: rgba(67,160,71,.12); }
+
+        /* Collab Modal */
+        #collab-modal {
+            display: none; position: fixed; inset: 0; z-index: 700;
+            align-items: center; justify-content: center;
+            background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+        }
+        .collab-modal-box {
+            background: #1a1a1a; border: 1px solid rgba(255,255,255,.1);
+            border-radius: 16px; padding: 24px; width: 380px; max-width: 90vw;
+        }
+        .collab-modal-title {
+            font-size: 16px; font-weight: 600; margin-bottom: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .collab-modal-close {
+            background: none; border: none; color: var(--muted);
+            font-size: 18px; cursor: pointer; padding: 4px;
+        }
+        .collab-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,.1); }
+        .collab-tab-btn {
+            flex: 1; background: none; border: none; border-bottom: 2px solid transparent;
+            color: var(--muted); font-size: 13px; padding: 8px 0; cursor: pointer;
+            transition: color .15s, border-color .15s;
+        }
+        .collab-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .collab-tab-btn:hover { color: var(--accent); }
+        .collab-tab-panel { display: none; }
+        .collab-tab-panel.active { display: block; }
+        .collab-field { margin-bottom: 12px; }
+        .collab-field label { display: block; font-size: 12px; opacity: .6; margin-bottom: 6px; }
+        .collab-field select, .collab-field input {
+            width: 100%; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+            color: #fff; border-radius: 8px; padding: 8px 12px; font-size: 13px;
+            font-family: var(--font); outline: none; -webkit-appearance: none; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 10px center;
+        }
+        .collab-field select:focus, .collab-field input:focus { border-color: rgba(255,255,255,.25); }
+        .collab-field select option { background: #222; color: #fff; padding: 8px; }
+        .collab-action-btn {
+            width: 100%; padding: 10px; border: none; border-radius: 8px;
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
+            color: #fff; margin-top: 4px;
+        }
+        .collab-action-btn.green { background: #43a047; }
+        .collab-action-btn.green:hover { background: #388e3c; }
+        .collab-action-btn.blue { background: #1e88e5; }
+        .collab-action-btn.blue:hover { background: #1976d2; }
+        .collab-hint { font-size: 11px; opacity: .4; margin-top: 8px; text-align: center; }
+
+        /* Permission-based UI restrictions */
+        .collab-readonly .ov-btn.ov-fav,
+        .collab-readonly .ov-btn.ov-del,
+        .collab-readonly .tag-x,
+        .collab-readonly #select-bar,
+        .collab-no-add #addBtn,
+        .collab-no-add #drop-overlay,
+        .collab-no-add .ov-btn.ov-del {
+            pointer-events: none !important; opacity: .3 !important;
+        }
+        .collab-readonly #ctx-menu .ctx-item[data-a="fav"],
+        .collab-readonly #ctx-menu .ctx-item[data-a="note"],
+        .collab-readonly #ctx-menu .ctx-item[data-a="del"],
+        .collab-readonly #ctx-menu .ctx-item[data-a="dup"],
+        .collab-readonly #ctx-menu .ctx-ci,
+        .collab-readonly #ctx-menu .ctx-input {
+            pointer-events: none !important; opacity: .3 !important;
+        }
     </style>
 </head>
 
@@ -1428,10 +1548,23 @@
         <span class="badge-count" id="imgCount">0 images</span>
         <div class="spacer"></div>
         <button class="tb-btn" id="addBtn">+</button>
+        <button id="collabBtn" title="Collaborate (Ctrl+Shift+C)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></button>
         <button class="tb-btn" id="settingsBtn"></button>
         <input type="file" multiple accept="image/*" class="hidden-input" id="fileInput">
         <input type="file" accept=".json" class="hidden-input" id="restoreInput">
         <input type="file" accept=".json" class="hidden-input" id="clipInput">
+    </div>
+    <div id="collab-bar">
+        <span class="collab-badge" id="collab-room-id"></span>
+        <span class="collab-perm-tag" id="collab-perm"></span>
+        <div id="collab-users"></div>
+        <span id="collab-user-count"></span>
+        <div class="collab-bar-spacer"></div>
+        <button class="collab-bar-btn" id="collab-copy-btn">Copy Link</button>
+        <div id="collab-owner-controls">
+            <button class="collab-bar-btn danger" id="collab-delete-btn">Delete Room</button>
+        </div>
+        <button class="collab-bar-btn" id="collab-leave-btn">Leave</button>
     </div>
     <div id="filterbar"></div>
     <div id="color-bar"><span class="color-label">Color:</span></div>
@@ -1560,29 +1693,155 @@
         function handleImgError(imgEl, im) {
             if (!imgEl || !im) return;
             const retries = parseInt(imgEl.dataset.retry || '0');
-            if (im.src && im.src.startsWith('http') && retries < 2) {
+            if (retries < 3) {
                 imgEl.dataset.retry = retries + 1;
-                // Try without referrer and with cache bust
-                imgEl.referrerPolicy = 'no-referrer';
-                setTimeout(() => {
-                    imgEl.src = im.src + (im.src.includes('?') ? '&' : '?') + '_r=' + Date.now();
-                }, 400 * (retries + 1));
-            } else {
-                imgEl.classList.add('img-broken');
-                imgEl.alt = im.filename + ' (failed to load)';
-                imgEl.style.minHeight = '120px';
-                imgEl.style.background = 'rgba(255,255,255,.04)';
-                imgEl.style.objectFit = 'contain';
+                getImgSrc(im.id, true).then(src => {
+                    if (src) {
+                        const newBlob = getOrMakeBlob(im.id, src);
+                        im.src = newBlob;
+                        imgEl.src = newBlob;
+                    } else if (im.src && im.src.startsWith('http')) {
+                        imgEl.referrerPolicy = 'no-referrer';
+                        setTimeout(() => {
+                            imgEl.src = im.src + (im.src.includes('?') ? '&' : '?') + '_r=' + Date.now();
+                        }, 400 * (retries + 1));
+                    } else {
+                        markBroken(imgEl, im);
+                    }
+                }).catch(() => {
+                    markBroken(imgEl, im);
+                });
+                return;
             }
+            markBroken(imgEl, im);
+        }
+        function markBroken(imgEl, im) {
+            imgEl.classList.add('img-broken');
+            imgEl.alt = (im.filename || 'image') + ' (failed to load)';
+            imgEl.style.minHeight = '120px';
+            imgEl.style.background = 'rgba(255,255,255,.04)';
+            imgEl.style.objectFit = 'contain';
         }
         function hexToHSL(hex) { let r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0, s = 0, l = (mx + mn) / 2; if (d > 0) { s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); if (mx === r) h = ((g - b) / d + (g < b ? 6 : 0)) * 60; else if (mx === g) h = ((b - r) / d + 2) * 60; else h = ((r - g) / d + 4) * 60 } return [h, s * 100, l * 100] }
         function matchColor(palHex, name) { if (!palHex || palHex.length < 7) return false; const [h, s, l] = hexToHSL(palHex); switch (name) { case 'Red': return (h <= 15 || h >= 345) && s > 25 && l > 10 && l < 85; case 'Orange': return h > 15 && h <= 45 && s > 25 && l > 15; case 'Yellow': return h > 45 && h <= 75 && s > 25 && l > 20; case 'Green': return h > 75 && h <= 165 && s > 20 && l > 10 && l < 85; case 'Teal': return h > 165 && h <= 195 && s > 20 && l > 10; case 'Blue': return h > 195 && h <= 255 && s > 20 && l > 10 && l < 85; case 'Purple': return h > 255 && h <= 285 && s > 20 && l > 10; case 'Pink': return h > 285 && h <= 345 && s > 20 && l > 15; case 'White': return l > 80 && s < 15; case 'Gray': return s < 15 && l >= 15 && l <= 80; case 'Black': return l < 15; default: return false } }
         function buildColorBar() { cbar.innerHTML = '<span class="color-label">Color:</span>'; COLORS.forEach(([name, hex]) => { const d = document.createElement('div'); d.className = 'color-dot' + (name === 'All' ? '' : colorFilter.has(name) ? ' active' : ''); d.title = name; if (name === 'All') { d.style.background = 'conic-gradient(red,yellow,green,cyan,blue,magenta,red)'; d.style.opacity = colorFilter.size ? '1' : '.4' } else { d.style.background = hex; if (name === 'White') d.style.border = '2px solid rgba(255,255,255,.3)'; if (name === 'Black') d.style.border = '2px solid rgba(255,255,255,.15)' } d.onclick = () => { if (name === 'All') { colorFilter.clear() } else { if (colorFilter.has(name)) colorFilter.delete(name); else colorFilter.add(name) } buildColorBar(); render() }; cbar.appendChild(d) }) }
+        const _srcMemCache = new Map();
+        function setSrcCache(id, s) {
+            if (!id || !s) return;
+            _srcMemCache.set(id, s);
+            if (_srcMemCache.size > 20) {
+                const first = _srcMemCache.keys().next().value;
+                _srcMemCache.delete(first);
+            }
+        }
+        let _sharedDB = null;
+        function getSharedDB() {
+            if (_sharedDB) return Promise.resolve(_sharedDB);
+            return new Promise((ok, no) => {
+                const r = indexedDB.open(DB, 1);
+                r.onupgradeneeded = e => e.target.result.createObjectStore(STORE, { keyPath: 'id' });
+                r.onsuccess = () => {
+                    _sharedDB = r.result;
+                    _sharedDB.onclose = () => { _sharedDB = null; };
+                    _sharedDB.onversionchange = () => { if (_sharedDB) { _sharedDB.close(); _sharedDB = null; } };
+                    ok(_sharedDB);
+                };
+                r.onerror = () => no(r.error);
+            });
+        }
+        function getImgSrc(id, preferPermanent = false) {
+            const im = imgMap.get(id);
+            if (!preferPermanent && im && im.src) return Promise.resolve(im.src);
+            if (!preferPermanent && typeof _blobCache !== 'undefined' && _blobCache.has(id)) return Promise.resolve(_blobCache.get(id));
+            if (!preferPermanent && _srcMemCache.has(id)) return Promise.resolve(_srcMemCache.get(id));
+            if (im && im.src && !im.src.startsWith('blob:')) return Promise.resolve(im.src);
+            return new Promise((resolve) => {
+                getSharedDB().then(db => {
+                    const tx = db.transaction(STORE, 'readonly');
+                    const req = tx.objectStore(STORE).get(id);
+                    req.onsuccess = () => {
+                        const s = req.result ? req.result.src : '';
+                        if (s) setSrcCache(id, s);
+                        resolve(s || '');
+                    };
+                    req.onerror = () => resolve('');
+                }).catch(() => resolve(''));
+            });
+        }
         function openDB() { return new Promise((ok, no) => { const r = indexedDB.open(DB, 1); r.onupgradeneeded = e => e.target.result.createObjectStore(STORE, { keyPath: 'id' }); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error) }) }
-        async function dbLoad() { const db = await openDB(); return new Promise((ok, no) => { const tx = db.transaction(STORE, 'readonly'), r = tx.objectStore(STORE).getAll(); r.onsuccess = () => { db.close(); ok(r.result || []) }; r.onerror = () => { db.close(); no(r.error) } }) }
-        async function dbSave() { const db = await openDB(); return new Promise((ok, no) => { const tx = db.transaction(STORE, 'readwrite'), s = tx.objectStore(STORE); s.clear(); imgs.forEach(i => s.put(i)); tx.oncomplete = () => { db.close(); ok() }; tx.onerror = () => { db.close(); no(tx.error) } }) }
-        async function dbSaveOne(id) { const im = imgMap.get(id) || imgs.find(x => x.id === id); if (!im) return; const db = await openDB(); return new Promise((ok, no) => { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).put(im); tx.oncomplete = () => { db.close(); ok() }; tx.onerror = () => { db.close(); no(tx.error) } }) }
+        async function dbLoad() {
+            const db = await openDB();
+            return new Promise((ok, no) => {
+                const tx = db.transaction(STORE, 'readonly');
+                const req = tx.objectStore(STORE).openCursor();
+                const res = [];
+                req.onsuccess = (e) => {
+                    const cursor = e.target.result;
+                    if (cursor) {
+                        const item = cursor.value;
+                        const keepSrc = res.length < 40;
+                        res.push({
+                            id: item.id,
+                            filename: item.filename || 'image.png',
+                            timestamp: item.timestamp || 0,
+                            viewCount: item.viewCount || 0,
+                            categories: item.categories || [],
+                            note: item.note || '',
+                            fav: !!item.fav,
+                            manualOrder: item.manualOrder || 0,
+                            palette: item.palette || [],
+                            hash: item.hash,
+                            src: keepSrc && item.src ? getOrMakeBlob(item.id, item.src) : undefined
+                        });
+                        cursor.continue();
+                    } else {
+                        db.close();
+                        ok(res);
+                    }
+                };
+                req.onerror = () => {
+                    db.close();
+                    no(req.error);
+                };
+            });
+        }
+        async function dbSaveNew(im) { const db = await openDB(); return new Promise((ok, no) => { const tx = db.transaction(STORE, 'readwrite'); tx.objectStore(STORE).put(im); tx.oncomplete = () => { db.close(); ok() }; tx.onerror = () => { db.close(); no(tx.error) } }) }
+        async function dbSaveOne(id) { const im = imgMap.get(id) || imgs.find(x => x.id === id); if (!im) return; const db = await openDB(); return new Promise((ok, no) => { const tx = db.transaction(STORE, 'readwrite'), s = tx.objectStore(STORE); const req = s.get(id); req.onsuccess = () => { const rec = req.result; if (rec) { rec.categories = im.categories; rec.note = im.note; rec.fav = im.fav; rec.palette = im.palette; rec.viewCount = im.viewCount; rec.manualOrder = im.manualOrder; s.put(rec) } else s.put(im); }; tx.oncomplete = () => { db.close(); ok() }; tx.onerror = () => { db.close(); no(tx.error) } }) }
         function uid() { return Math.random().toString(36).substr(2, 9) }
+        function dataUrlToBlobUrl(src) {
+            if (!src || !src.startsWith('data:')) return src;
+            try {
+                const comma = src.indexOf(',');
+                if (comma === -1) return src;
+                const meta = src.substring(5, comma);
+                const mime = meta.split(';')[0] || 'image/png';
+                const bstr = atob(src.substring(comma + 1));
+                const len = bstr.length;
+                const u8 = new Uint8Array(len);
+                for (let i = 0; i < len; i++) u8[i] = bstr.charCodeAt(i);
+                const blob = new Blob([u8], { type: mime });
+                return URL.createObjectURL(blob);
+            } catch(e) {
+                return src;
+            }
+        }
+        const _blobCache = new Map();
+        function getOrMakeBlob(id, dataUrl) {
+            if (!dataUrl) return '';
+            if (!dataUrl.startsWith('data:')) return dataUrl;
+            if (_blobCache.has(id)) return _blobCache.get(id);
+            const bUrl = dataUrlToBlobUrl(dataUrl);
+            _blobCache.set(id, bUrl);
+            if (_blobCache.size > 120) {
+                const oldestId = _blobCache.keys().next().value;
+                const oldUrl = _blobCache.get(oldestId);
+                _blobCache.delete(oldestId);
+                const im = imgMap.get(oldestId);
+                if (im && im.src === oldUrl) delete im.src;
+                try { URL.revokeObjectURL(oldUrl); } catch(e) {}
+            }
+            return bUrl;
+        }
         function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) } }
         function hash(s) { let h = 0; const step = s.length < 512 ? 1 : Math.floor(s.length / 128); for (let i = 0; i < s.length; i += step) h = (h * 31 + s.charCodeAt(i)) | 0; return h.toString(36) }
         const hashSet = new Set(); // O(1) duplicate detection
@@ -1598,17 +1857,35 @@
         async function dbSaveDirty() {
           if (_dirty.size === 0 && !_fullSave) return;
           localStorage.setItem(SORTK, sort_);
-          if (_fullSave || _dirty.size > 50) {
-            await dbSave(); _fullSave = false;
-          } else {
-            const db = await openDB();
-            await new Promise((ok, no) => {
-              const tx = db.transaction(STORE, 'readwrite'), s = tx.objectStore(STORE);
-              for (const id of _dirty) { const im = imgMap.get(id); if (im) s.put(im); }
-              tx.oncomplete = () => { db.close(); ok() }; tx.onerror = () => { db.close(); no(tx.error) };
-            });
-          }
+          const db = await openDB();
+          await new Promise((ok, no) => {
+            const tx = db.transaction(STORE, 'readwrite'), s = tx.objectStore(STORE);
+            if (imgs.length === 0 && _fullSave) {
+              s.clear();
+            } else {
+              for (const id of _dirty) {
+                const im = imgMap.get(id);
+                if (!im) continue;
+                const req = s.get(id);
+                req.onsuccess = () => {
+                  const rec = req.result;
+                  if (rec) {
+                    rec.categories = im.categories;
+                    rec.note = im.note;
+                    rec.fav = im.fav;
+                    rec.palette = im.palette;
+                    rec.viewCount = im.viewCount;
+                    rec.manualOrder = im.manualOrder;
+                    s.put(rec);
+                  }
+                };
+              }
+            }
+            tx.oncomplete = () => { db.close(); ok() };
+            tx.onerror = () => { db.close(); no(tx.error) };
+          });
           _dirty.clear();
+          _fullSave = false;
           updStorage();
         }
         const save = debounce(() => { dbSaveDirty().catch(e => toast('Save error: ' + e.message)) }, 500);
@@ -1616,17 +1893,27 @@
         function saveDirty(id) { _dirty.add(id); save(); }
         function saveFew(ids) { ids.forEach(id => { _dirty.add(id); }); save(); }
         function pushU() { try { const snap = imgs.map(x => ({ id: x.id, filename: x.filename, timestamp: x.timestamp, viewCount: x.viewCount, categories: x.categories.slice(), note: x.note, fav: x.fav, manualOrder: x.manualOrder, palette: x.palette.slice(), hash: x.hash })); undo.push(snap); if (undo.length > 3) undo.shift(); redo = [] } catch (e) { } }
-        function doUndo() { if (!undo.length) return toast('Nothing to undo'); try { const snap = imgs.map(x => ({ id: x.id, filename: x.filename, timestamp: x.timestamp, viewCount: x.viewCount, categories: [...x.categories], note: x.note, fav: x.fav, manualOrder: x.manualOrder, palette: [...x.palette], hash: x.hash })); redo.push(snap) } catch (e) { } const old = undo.pop(); const srcMap = {}; imgs.forEach(x => { srcMap[x.id] = x.src }); imgs = old.map(x => ({ ...x, src: srcMap[x.id] || '' })); hashSet.clear(); imgs.forEach(i => hashSet.add(i.hash)); _fullSave = true; save(); render(); toast('Undone', 1500) }
-        function doRedo() { if (!redo.length) return toast('Nothing to redo'); try { const snap = imgs.map(x => ({ id: x.id, filename: x.filename, timestamp: x.timestamp, viewCount: x.viewCount, categories: [...x.categories], note: x.note, fav: x.fav, manualOrder: x.manualOrder, palette: [...x.palette], hash: x.hash })); undo.push(snap) } catch (e) { } const old = redo.pop(); const srcMap = {}; imgs.forEach(x => { srcMap[x.id] = x.src }); imgs = old.map(x => ({ ...x, src: srcMap[x.id] || '' })); hashSet.clear(); imgs.forEach(i => hashSet.add(i.hash)); _fullSave = true; save(); render(); toast('Redone', 1500) }
+        function doUndo() { if (!undo.length) return toast('Nothing to undo'); try { const snap = imgs.map(x => ({ id: x.id, filename: x.filename, timestamp: x.timestamp, viewCount: x.viewCount, categories: [...x.categories], note: x.note, fav: x.fav, manualOrder: x.manualOrder, palette: [...x.palette], hash: x.hash })); redo.push(snap) } catch (e) { } const old = undo.pop(); const srcMap = {}; imgs.forEach(x => { if (x.src) srcMap[x.id] = x.src; }); imgs = old.map(x => { const m = { ...x }; if (srcMap[x.id]) m.src = srcMap[x.id]; else delete m.src; return m; }); hashSet.clear(); imgs.forEach(i => { if (i.hash) hashSet.add(i.hash); _dirty.add(i.id); }); _fullSave = true; save(); render(); toast('Undone', 1500) }
+        function doRedo() { if (!redo.length) return toast('Nothing to redo'); try { const snap = imgs.map(x => ({ id: x.id, filename: x.filename, timestamp: x.timestamp, viewCount: x.viewCount, categories: [...x.categories], note: x.note, fav: x.fav, manualOrder: x.manualOrder, palette: [...x.palette], hash: x.hash })); undo.push(snap) } catch (e) { } const old = redo.pop(); const srcMap = {}; imgs.forEach(x => { if (x.src) srcMap[x.id] = x.src; }); imgs = old.map(x => { const m = { ...x }; if (srcMap[x.id]) m.src = srcMap[x.id]; else delete m.src; return m; }); hashSet.clear(); imgs.forEach(i => { if (i.hash) hashSet.add(i.hash); _dirty.add(i.id); }); _fullSave = true; save(); render(); toast('Redone', 1500) }
         function updStorage() { if (navigator.storage && navigator.storage.estimate) { navigator.storage.estimate().then(e => { const u = e.usage || 0, q = e.quota || 1, p = Math.min(u / q * 100, 100), f = $('#storageFill'); f.style.width = p + '%'; f.style.background = p > 80 ? '#e55' : p > 50 ? '#a83' : '#444'; $('#storageTip').textContent = (u / 1048576).toFixed(1) + ' MB / ' + (q / 1073741824).toFixed(1) + ' GB' }) } }
-        let palQ = 0; const _palIdle = typeof requestIdleCallback === 'function' ? requestIdleCallback : (fn) => setTimeout(fn, 50 + (palQ++ * 20)); function palette(el, id) { const im = imgMap.get(id); if (!im || im.palette.length) return; _palIdle(() => { try { const cv = document.createElement('canvas'); cv.width = cv.height = 80; const ctx = cv.getContext('2d'); ctx.drawImage(el, 0, 0, 80, 80); const px = ctx.getImageData(0, 0, 80, 80).data, bk = {}; const Q = 32; for (let i = 0; i < px.length; i += 4) { const r = Math.round(px[i] / Q) * Q, g = Math.round(px[i + 1] / Q) * Q, b = Math.round(px[i + 2] / Q) * Q; const mn = Math.min(r, g, b), mx = Math.max(r, g, b), sat = mx === 0 ? 0 : (mx - mn) / mx; const lum = (r + g + b) / 3; const w = sat > 0.2 ? 5 : (lum < 30 || lum > 230) ? 0.5 : 1; const k = r + ',' + g + ',' + b; bk[k] = (bk[k] || 0) + w } const ranked = Object.entries(bk).sort((a, b) => b[1] - a[1]); const picked = []; const cdist = (a, b) => { const ar = a.split(',').map(Number), br = b.split(',').map(Number); return Math.sqrt((ar[0] - br[0]) ** 2 + (ar[1] - br[1]) ** 2 + (ar[2] - br[2]) ** 2) }; for (const [k] of ranked) { if (picked.length >= 5) break; if (picked.every(p => cdist(k, p) > 60)) picked.push(k) } const s = picked.map(k => '#' + k.split(',').map(v => Math.min(255, Math.max(0, +v)).toString(16).padStart(2, '0')).join('')); if (im) { im.palette = s; dbSaveOne(id).catch(() => {}); const st = $(`[data-id="${id}"] .palette-strip`); if (st) st.innerHTML = s.map(c => `<div class="swatch" style="background:${c}"></div>`).join('') } } catch (e) { } }, { timeout: 2000 }) }
+        let palQ = 0; const _palIdle = typeof requestIdleCallback === 'function' ? requestIdleCallback : (fn) => setTimeout(fn, 50 + (palQ++ * 20));
+        let _palCanvas = null, _palCtx = null;
+        function getPalCtx() {
+            if (!_palCanvas) {
+                _palCanvas = document.createElement('canvas');
+                _palCanvas.width = _palCanvas.height = 80;
+                _palCtx = _palCanvas.getContext('2d', { willReadFrequently: true });
+            }
+            return _palCtx;
+        }
+        function palette(el, id) { const im = imgMap.get(id); if (!im || (im.palette && im.palette.length)) return; _palIdle(() => { try { if (!el || !el.naturalWidth || !el.naturalHeight) return; const ctx = getPalCtx(); ctx.clearRect(0, 0, 80, 80); ctx.drawImage(el, 0, 0, 80, 80); const px = ctx.getImageData(0, 0, 80, 80).data, bk = {}; const Q = 32; for (let i = 0; i < px.length; i += 4) { const r = Math.round(px[i] / Q) * Q, g = Math.round(px[i + 1] / Q) * Q, b = Math.round(px[i + 2] / Q) * Q; const mn = Math.min(r, g, b), mx = Math.max(r, g, b), sat = mx === 0 ? 0 : (mx - mn) / mx; const lum = (r + g + b) / 3; const w = sat > 0.2 ? 5 : (lum < 30 || lum > 230) ? 0.5 : 1; const k = r + ',' + g + ',' + b; bk[k] = (bk[k] || 0) + w } const ranked = Object.entries(bk).sort((a, b) => b[1] - a[1]); const picked = []; const cdist = (a, b) => { const ar = a.split(',').map(Number), br = b.split(',').map(Number); return Math.sqrt((ar[0] - br[0]) ** 2 + (ar[1] - br[1]) ** 2 + (ar[2] - br[2]) ** 2) }; for (const [k] of ranked) { if (picked.length >= 5) break; if (picked.every(p => cdist(k, p) > 60)) picked.push(k) } const s = picked.map(k => '#' + k.split(',').map(v => Math.min(255, Math.max(0, +v)).toString(16).padStart(2, '0')).join('')); if (im) { im.palette = s; dbSaveOne(id).catch(() => {}); const st = $(`[data-id="${id}"] .palette-strip`); if (st) st.innerHTML = s.map(c => `<div class="swatch" style="background:${c}"></div>`).join('') } } catch (e) { } }, { timeout: 2000 }) }
         let _addT = 0, _lastAddSig = '', _lastAddTs = 0; const renderSoon = debounce(() => queueRender(), 400);
         function addOne(src, name) {
             if (!src) return;
             const h = hash(src);
             const now = Date.now();
             if (hashSet.has(h)) return;
-            if (imgs.some(x => x.src === src || (x.hash && x.hash === h))) return;
+            if (imgs.some(x => (x.src && x.src === src) || (x.hash && x.hash === h))) return;
             const sig = (name || '') + '_' + (src.length > 200 ? (src.slice(0, 80) + '_' + src.length) : src);
             if (sig === _lastAddSig && (now - _lastAddTs < 2500)) return;
             _lastAddSig = sig;
@@ -1635,13 +1922,15 @@
             const rapid = (now - _addT) < 2000;
             _addT = now;
             if (!rapid) pushU();
-            const im = { id: uid(), src, filename: name || 'image.png', timestamp: now, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h };
-            imgs.push(im);
+            const imRecord = { id: uid(), src, filename: name || 'image.png', timestamp: now, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h };
+            dbSaveNew(imRecord);
+            setSrcCache(imRecord.id, src);
+            const im = { ...imRecord, src: dataUrlToBlobUrl(src) };
+            imgs.unshift(im);
             imgMap.set(im.id, im);
             filtered = doFilter();
             sorted = doSort(filtered);
-            _dirty.add(im.id);
-            save();
+            if (typeof _collabSyncAdd === 'function' && typeof _collabActive === 'function' && _collabActive()) _collabSyncAdd(imRecord);
             if (grid.querySelector(`.card[data-id="${im.id}"]`)) return;
             const card = mkCard(im);
             card.style.animation = 'cardIn 180ms cubic-bezier(.2,0,.4,1)';
@@ -1658,40 +1947,154 @@
             } else {
                 renderSoon()
             }
-            if (!im.palette.length) {
-                const ie = card.querySelector('img');
-                if (ie) ie.onload = function() { palette(this, im.id) }
-            }
             morphText($('#imgCount'), filtered.length + ' images');
             if (!rapid) toast('Added');
         }
         // Batch add for scraper: accepts [{src, filename}], ONE save + ONE render
-        function addBulkUrls(items) { if (!items || !items.length) return 0; pushU(); let added = 0; for (const it of items) { const h = hash(it.src); if (hashSet.has(h)) continue; hashSet.add(h); const im = { id: uid(), src: it.src, filename: it.filename || 'image.png', timestamp: Date.now() + added, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h }; imgs.push(im); imgMap.set(im.id, im); _dirty.add(im.id); added++; } if (added > 0) { save(); render(); toast('Added ' + added + ' thumbnails'); } return added; }
-        function downloadImg(im) { try { const parts = im.src.match(/^data:(image\/[^;]+);base64,(.+)$/); if (!parts) { const a = document.createElement('a'); a.href = im.src; a.download = im.filename; a.click(); return } const mime = parts[1]; const universalTypes = ['image/png','image/jpeg','image/gif']; const needsConvert = !universalTypes.includes(mime); let fn = im.filename || 'image'; const dot = fn.lastIndexOf('.'); const baseName = dot > 0 ? fn.substring(0, dot) : fn; if (needsConvert) { const img = new Image(); img.onload = function() { const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0); cv.toBlob(function(blob) { if (!blob) { toast('Convert failed'); return } const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = baseName + '.png'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 3000) }, 'image/png') }; img.onerror = function() { toast('Failed to load image'); }; img.src = im.src } else { const extMap = {'image/png':'.png','image/jpeg':'.jpg','image/gif':'.gif'}; const ext = extMap[mime] || '.png'; const raw = atob(parts[2]); const arr = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i); const blob = new Blob([arr], { type: mime }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = baseName + ext; a.click(); setTimeout(() => URL.revokeObjectURL(url), 3000) } } catch(e) { toast('Download failed'); console.error(e) } }
+        function addBulkUrls(items) { if (!items || !items.length) return 0; pushU(); let added = 0; for (const it of items) { const h = hash(it.src); if (hashSet.has(h)) continue; hashSet.add(h); const imRecord = { id: uid(), src: it.src, filename: it.filename || 'image.png', timestamp: Date.now() + added, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h }; dbSaveNew(imRecord); setSrcCache(imRecord.id, it.src); const im = { ...imRecord, src: dataUrlToBlobUrl(it.src) }; imgs.push(im); imgMap.set(im.id, im); added++; } if (added > 0) { render(); toast('Added ' + added + ' thumbnails'); } return added; }
+        function downloadImg(im) { getImgSrc(im.id).then(src => { if (!src) return toast('Image not found'); try { const parts = src.match(/^data:(image\/[^;]+);base64,(.+)$/); if (!parts) { const a = document.createElement('a'); a.href = src; a.download = im.filename; a.click(); return } const mime = parts[1]; const universalTypes = ['image/png','image/jpeg','image/gif']; const needsConvert = !universalTypes.includes(mime); let fn = im.filename || 'image'; const dot = fn.lastIndexOf('.'); const baseName = dot > 0 ? fn.substring(0, dot) : fn; if (needsConvert) { const img = new Image(); img.onload = function() { const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0); cv.toBlob(function(blob) { if (!blob) { toast('Convert failed'); return } const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = baseName + '.png'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 3000) }, 'image/png') }; img.onerror = function() { toast('Failed to load image'); }; img.src = src } else { const extMap = {'image/png':'.png','image/jpeg':'.jpg','image/gif':'.gif'}; const ext = extMap[mime] || '.png'; const raw = atob(parts[2]); const arr = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i); const blob = new Blob([arr], { type: mime }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = baseName + ext; a.click(); setTimeout(() => URL.revokeObjectURL(url), 3000) } } catch(e) { toast('Download failed'); console.error(e) } }); }
         function showProg(t, n) { $('#progTitle').textContent = t; $('#progSub').textContent = '0 / ' + n; $('#progFill').style.width = '0%'; $('#progPct').textContent = '0%'; $('#progress-overlay').classList.add('active') }
         function updProg(d, t) { const p = Math.round(d / t * 100); $('#progSub').textContent = d + ' / ' + t; $('#progFill').style.width = p + '%'; $('#progPct').textContent = p + '%' }
         function hideProg() { $('#progress-overlay').classList.remove('active') }
-        function addBatch(files) { if (!files.length) return; pushU(); let done = 0, added = 0, skip = 0; const n = files.length, CH = 10; showProg('Processing ' + n + ' images...', n); function go(si) { const ei = Math.min(si + CH, n); let wait = ei - si; for (let i = si; i < ei; i++) { const f = files[i], rd = new FileReader(); rd.onload = function () { const h = hash(rd.result); if (!hashSet.has(h)) { hashSet.add(h); const im = { id: uid(), src: rd.result, filename: f.name || 'image.png', timestamp: Date.now() + i, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h }; imgs.push(im); imgMap.set(im.id, im); _dirty.add(im.id); added++ } else skip++; done++; wait--; updProg(done, n); if (wait === 0) { if (ei < n) requestAnimationFrame(function () { go(ei) }); else { hideProg(); save(); render(); toast('Added ' + added + (skip ? ' (' + skip + ' dupes)' : '')) } } }; rd.onerror = function () { done++; wait--; skip++; updProg(done, n); if (wait === 0) { if (ei < n) requestAnimationFrame(function () { go(ei) }); else { hideProg(); save(); render(); toast('Added ' + added + (skip ? ' (' + skip + ' skipped)' : '')) } } }; rd.readAsDataURL(f) } } go(0) }
-        function delImg(id) { pushU(); const im = imgMap.get(id); if (im) hashSet.delete(im.hash); const _di = imgs.findIndex(x => x.id === id); if (_di > -1) imgs.splice(_di, 1); imgMap.delete(id); filtered = doFilter(); sorted = doSort(filtered); const el = $(`[data-id="${id}"]`); if (el) { el.style.opacity = '0'; el.style.transform = 'scale(.9)'; setTimeout(() => el.remove(), 180) } dbDelete(id).catch(() => {}); _fullSave = true; save(); morphText($('#imgCount'), filtered.length + ' images'); toast('Deleted — Ctrl+Z to undo') }
-        function mkCard(im) { const isUrl = im.src && im.src.startsWith('http'); const refPolicy = isUrl ? ' referrerpolicy="no-referrer"' : ''; const d = document.createElement('div'); d.className = 'card'; d.dataset.id = im.id; d.innerHTML = `<div class="badges">${im.fav ? '<div class="badge-icon badge-fav">' + ICO.star + '</div>' : ''}</div><div class="card-overlay"><button class="ov-btn ov-fav">${im.fav ? ICO.star : ICO.starO}</button><button class="ov-btn ov-del">${ICO.close}<svg class="del-ring" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13"/></svg></button><button class="ov-btn ov-zoom">${ICO.zoom}</button><button class="ov-btn ov-dl">${ICO.dl}</button></div><img src="${im.src}" alt="${im.filename}" decoding="async"${refPolicy}><div class="palette-strip">${im.palette.map(c => `<div class="swatch" style="background:${c}"></div>`).join('')}</div>${(im.categories.length || im.note) ? `<div class="meta"><div class="tags">${im.categories.slice(0, 3).map(c => `<span class="tag">${c}<span class="tag-x" data-c="${c}">×</span></span>`).join('')}${im.categories.length > 3 ? `<span class="tag" style="color:var(--muted)">+${im.categories.length - 3}</span>` : ''}</div>${im.note ? `<p class="note-preview">${im.note}</p>` : ''}</div>` : ''}`; const ie = d.querySelector('img'); if (ie) ie.onerror = function() { handleImgError(this, im) }; bindCard(d, im); return d }
+        function addBatch(files) { if (!files.length) return; pushU(); let done = 0, added = 0, skip = 0; const n = files.length, CH = 10; showProg('Processing ' + n + ' images...', n); function go(si) { const ei = Math.min(si + CH, n); let wait = ei - si; for (let i = si; i < ei; i++) { const f = files[i], rd = new FileReader(); rd.onload = function () { const h = hash(rd.result); if (!hashSet.has(h)) { hashSet.add(h); const imRecord = { id: uid(), src: rd.result, filename: f.name || 'image.png', timestamp: Date.now() + i, viewCount: 0, categories: [], note: '', fav: false, manualOrder: imgs.length, palette: [], hash: h }; dbSaveNew(imRecord); setSrcCache(imRecord.id, rd.result); const im = { ...imRecord, src: dataUrlToBlobUrl(rd.result) }; imgs.push(im); imgMap.set(im.id, im); added++ } else skip++; done++; wait--; updProg(done, n); if (wait === 0) { if (ei < n) requestAnimationFrame(function () { go(ei) }); else { hideProg(); render(); toast('Added ' + added + (skip ? ' (' + skip + ' dupes)' : '')) } } }; rd.onerror = function () { done++; wait--; skip++; updProg(done, n); if (wait === 0) { if (ei < n) requestAnimationFrame(function () { go(ei) }); else { hideProg(); render(); toast('Added ' + added + (skip ? ' (' + skip + ' skipped)' : '')) } } }; rd.readAsDataURL(f) } } go(0) }
+        const _cardObserver = null;
+        function mkCard(im) {
+            if (im.src && im.src.startsWith('data:')) { im.src = getOrMakeBlob(im.id, im.src); }
+            const isUrl = im.src && im.src.startsWith('http');
+            const refPolicy = isUrl ? ' referrerpolicy="no-referrer"' : '';
+            const d = document.createElement('div');
+            d.className = 'card';
+            d.dataset.id = im.id;
+            d.innerHTML = `<div class="badges">${im.fav ? '<div class="badge-icon badge-fav">' + ICO.star + '</div>' : ''}</div><div class="card-overlay"><button class="ov-btn ov-fav">${im.fav ? ICO.star : ICO.starO}</button><button class="ov-btn ov-del">${ICO.close}<svg class="del-ring" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13"/></svg></button><button class="ov-btn ov-zoom">${ICO.zoom}</button><button class="ov-btn ov-dl">${ICO.dl}</button></div><img src="${im.src || ''}" alt="${im.filename || 'image'}" loading="lazy" decoding="async"${refPolicy}><div class="palette-strip">${(im.palette || []).map(c => `<div class="swatch" style="background:${c}"></div>`).join('')}</div>${((im.categories && im.categories.length) || im.note) ? `<div class="meta"><div class="tags">${(im.categories || []).slice(0, 3).map(c => `<span class="tag">${c}<span class="tag-x" data-c="${c}">×</span></span>`).join('')}${(im.categories || []).length > 3 ? `<span class="tag" style="color:var(--muted)">+${(im.categories.length - 3)}</span>` : ''}</div>${im.note ? `<p class="note-preview">${im.note}</p>` : ''}</div>` : ''}`;
+            const ie = d.querySelector('img');
+            if (ie) {
+                ie.onerror = function() { handleImgError(this, im) };
+                ie.onload = function() {
+                    d._measured = true;
+                    if (this.naturalWidth && this.naturalHeight) {
+                        this.style.aspectRatio = this.naturalWidth + ' / ' + this.naturalHeight;
+                    }
+                    if (!im.palette || !im.palette.length) palette(this, im.id);
+                };
+                if (!im.src) {
+                    getImgSrc(im.id, true).then(s => {
+                        if (s && ie) {
+                            const bUrl = getOrMakeBlob(im.id, s);
+                            im.src = bUrl;
+                            ie.src = bUrl;
+                        }
+                    });
+                }
+            }
+            bindCard(d, im);
+            return d;
+        }
         function updateCardMeta(id) { const card = document.querySelector('[data-id="' + id + '"]'); if (!card) return; const im = imgMap.get(id) || imgs.find(x => x.id === id); if (!im) return; let m = card.querySelector('.meta'); if (im.categories.length || im.note) { if (!m) { m = document.createElement('div'); m.className = 'meta'; card.appendChild(m) } m.innerHTML = '<div class="tags">' + im.categories.slice(0, 3).map(c => '<span class="tag">' + c + '<span class="tag-x" data-c="' + c + '">×</span></span>').join('') + (im.categories.length > 3 ? '<span class="tag" style="color:var(--muted)">+' + (im.categories.length - 3) + '</span>' : '') + '</div>' + (im.note ? '<p class="note-preview">' + im.note + '</p>' : ''); m.querySelectorAll('.tag-x').forEach(t => t.onclick = e => { e.stopPropagation(); rmCat(id, t.dataset.c) }) } else if (m) { m.remove() } }
-        function bindCard(d, im) { d.onclick = e => { if (e.target.closest('.ov-btn') || e.target.closest('.tag-x') || e.target.closest('.note-preview') || e.target.closest('.note-edit')) return; if (e.ctrlKey || e.metaKey) { e.preventDefault(); if (selected.has(im.id)) selected.delete(im.id); else selected.add(im.id); d.classList.toggle('selected'); updSelBar() } else if (selected.size) { selected.clear(); document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected')); updSelBar() } }; d.oncontextmenu = e => { e.preventDefault(); showCtx(e, im.id) }; const del = d.querySelector('.ov-del'), circ = d.querySelector('.del-ring circle'); let dt; del.onmousedown = e => { e.stopPropagation(); circ.style.transition = 'stroke-dashoffset 600ms linear'; circ.style.strokeDashoffset = '0'; dt = setTimeout(() => delImg(im.id), 600) }; del.onmouseup = del.onmouseleave = () => { clearTimeout(dt); circ.style.transition = 'none'; circ.style.strokeDashoffset = '82' }; d.querySelector('.ov-dl').onclick = e => { e.stopPropagation(); downloadImg(im) }; d.querySelector('.ov-fav').onclick = e => { e.stopPropagation(); pushU(); const x = imgMap.get(im.id) || imgs.find(v => v.id === im.id); if (x) { x.fav = !x.fav; saveDirty(x.id); const btn = d.querySelector('.ov-fav'); btn.innerHTML = x.fav ? ICO.star : ICO.starO; const badges = d.querySelector('.badges'); if (x.fav) { if (!badges.querySelector('.badge-fav')) { const b = document.createElement('div'); b.className = 'badge-icon badge-fav'; b.innerHTML = ICO.star; badges.prepend(b) } } else { const bf = badges.querySelector('.badge-fav'); if (bf) bf.remove() } } }; d.querySelector('.ov-zoom').onclick = e => { e.stopPropagation(); openLB(im.id) }; d.querySelectorAll('.tag-x').forEach(t => t.onclick = e => { e.stopPropagation(); rmCat(im.id, t.dataset.c) }); d.ondblclick = e => { if (e.target.classList.contains('note-preview')) editNote(d, im.id) } }
+        function delImg(id) { pushU(); const im = imgMap.get(id); if (im) hashSet.delete(im.hash); const _di = imgs.findIndex(x => x.id === id); if (_di > -1) imgs.splice(_di, 1); imgMap.delete(id); _srcMemCache.delete(id); filtered = doFilter(); sorted = doSort(filtered); const el = document.querySelector(`.card[data-id="${id}"]`); if (el) { el.style.opacity = '0'; el.style.transform = 'scale(.9)'; setTimeout(() => el.remove(), 180); } dbDelete(id).catch(() => {}); if (typeof _collabSyncDelete === 'function' && typeof _collabActive === 'function' && _collabActive()) _collabSyncDelete(id); _fullSave = true; save(); morphText($('#imgCount'), filtered.length + ' images'); toast('Deleted — Ctrl+Z to undo'); }
+        function bindCard(d, im) { d.onclick = e => { if (e.target.closest('.ov-btn') || e.target.closest('.tag-x') || e.target.closest('.note-preview') || e.target.closest('.note-edit')) return; if (e.ctrlKey || e.metaKey) { e.preventDefault(); if (selected.has(im.id)) selected.delete(im.id); else selected.add(im.id); d.classList.toggle('selected'); updSelBar() } else if (selected.size) { selected.clear(); document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected')); updSelBar() } }; d.oncontextmenu = e => { e.preventDefault(); showCtx(e, im.id) }; const del = d.querySelector('.ov-del'), circ = d.querySelector('.del-ring circle'); let dt; del.onmousedown = e => { e.stopPropagation(); circ.style.transition = 'stroke-dashoffset 600ms linear'; circ.style.strokeDashoffset = '0'; dt = setTimeout(() => delImg(im.id), 600) }; del.onmouseup = del.onmouseleave = () => { clearTimeout(dt); circ.style.transition = 'none'; circ.style.strokeDashoffset = '82' }; d.querySelector('.ov-dl').onclick = e => { e.stopPropagation(); downloadImg(im) }; d.querySelector('.ov-fav').onclick = e => { e.stopPropagation(); pushU(); const x = imgMap.get(im.id) || imgs.find(v => v.id === im.id); if (x) { x.fav = !x.fav; saveDirty(x.id); if (typeof _collabSyncUpdate === 'function' && typeof _collabActive === 'function' && _collabActive()) _collabSyncUpdate(x.id, { fav: x.fav }); const btn = d.querySelector('.ov-fav'); btn.innerHTML = x.fav ? ICO.star : ICO.starO; const badges = d.querySelector('.badges'); if (x.fav) { if (!badges.querySelector('.badge-fav')) { const b = document.createElement('div'); b.className = 'badge-icon badge-fav'; b.innerHTML = ICO.star; badges.prepend(b) } } else { const bf = badges.querySelector('.badge-fav'); if (bf) bf.remove() } } }; d.querySelector('.ov-zoom').onclick = e => { e.stopPropagation(); openLB(im.id) }; d.querySelectorAll('.tag-x').forEach(t => t.onclick = e => { e.stopPropagation(); rmCat(im.id, t.dataset.c) }); d.ondblclick = e => { if (e.target.classList.contains('note-preview')) editNote(d, im.id) } }
         function updSelBar() { const bar = $('#select-bar'); if (selected.size) { bar.classList.add('show'); morphText($('#selCount'), selected.size + ' selected') } else { bar.classList.remove('show') } }
         $('#selClear').onclick = () => { selected.clear(); document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected')); updSelBar() };
-        $('#selDel').onclick = () => { if (!selected.size) return; pushU(); selected.forEach(id => { const im = imgMap.get(id); if (im) hashSet.delete(im.hash); imgMap.delete(id); }); imgs = imgs.filter(x => !selected.has(x.id)); const cnt = selected.size; selected.clear(); _fullSave = true; save(); render(); updSelBar(); toast('Deleted ' + cnt) };
+        $('#selDel').onclick = () => { if (!selected.size) return; pushU(); selected.forEach(id => { const im = imgMap.get(id); if (im) hashSet.delete(im.hash); imgMap.delete(id); _srcMemCache.delete(id); dbDelete(id).catch(() => {}); }); imgs = imgs.filter(x => !selected.has(x.id)); const cnt = selected.size; selected.clear(); _fullSave = true; save(); render(); updSelBar(); toast('Deleted ' + cnt) };
         $('#selFav').onclick = () => { if (!selected.size) return; pushU(); const ids = []; imgs.forEach(x => { if (selected.has(x.id)) { x.fav = !x.fav; ids.push(x.id); const card = document.querySelector('[data-id="' + x.id + '"]'); if (card) { const btn = card.querySelector('.ov-fav'); if (btn) btn.innerHTML = x.fav ? ICO.star : ICO.starO; const badges = card.querySelector('.badges'); if (x.fav) { if (!badges.querySelector('.badge-fav')) { const b = document.createElement('div'); b.className = 'badge-icon badge-fav'; b.innerHTML = ICO.star; badges.prepend(b) } } else { const bf = badges.querySelector('.badge-fav'); if (bf) bf.remove() } } } }); saveFew(ids); toast('Toggled fav on ' + selected.size) };
         $('#selCat').onclick = () => { if (!selected.size) return; const c = prompt('Category for ' + selected.size + ' images:'); if (c && c.trim()) { pushU(); imgs.forEach(x => { if (selected.has(x.id) && !x.categories.includes(c.trim())) { x.categories.push(c.trim()) } }); addCat(c.trim()); save(); render(); toast('Tagged ' + selected.size + ' images') } };
-        $('#selExport').onclick = () => { if (!selected.size) return; const sel = imgs.filter(x => selected.has(x.id)); toast('Exporting...'); setTimeout(() => { try { const data = { version: 2, timestamp: Date.now(), categories: cats, sort: sort_, images: sel }; const blob = new Blob([JSON.stringify(data)], { type: 'application/json' }); const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = 'moodboard-selection-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); URL.revokeObjectURL(u); toast('Exported ' + sel.length) } catch (e) { toast('Export failed') } }, 100) };
-        function rmCat(id, c) { pushU(); const im = imgMap.get(id) || imgs.find(x => x.id === id); if (im) { im.categories = im.categories.filter(x => x !== c); saveDirty(id); updateCardMeta(id) } }
-        function addCatTo(id, c) { if (!c.trim()) return; pushU(); const im = imgMap.get(id) || imgs.find(x => x.id === id); if (im && !im.categories.includes(c.trim())) { im.categories.push(c.trim()); addCat(c.trim()); saveDirty(id); updateCardMeta(id) } }
-        function editNote(card, id) { const im = imgMap.get(id) || imgs.find(x => x.id === id); if (!im) return; let m = card.querySelector('.meta'); if (!m) { m = document.createElement('div'); m.className = 'meta'; card.appendChild(m) } const ta = document.createElement('textarea'); ta.className = 'note-edit'; ta.value = im.note; m.innerHTML = ''; m.appendChild(ta); ta.focus(); const done = s => { if (s) { pushU(); im.note = ta.value; saveDirty(id) } updateCardMeta(id) }; ta.onblur = () => done(true); ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); done(true) } if (e.key === 'Escape') done(false) } }
+        $('#selExport').onclick = async () => { if (!selected.size) return; toast('Exporting...'); try { const sel = imgs.filter(x => selected.has(x.id)); const fullSel = await Promise.all(sel.map(async x => ({ ...x, src: await getImgSrc(x.id, true) }))); const data = { version: 2, timestamp: Date.now(), categories: cats, sort: sort_, images: fullSel }; const blob = new Blob([JSON.stringify(data)], { type: 'application/json' }); const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = 'moodboard-selection-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); URL.revokeObjectURL(u); toast('Exported ' + fullSel.length); } catch (e) { toast('Export failed: ' + e.message); } };
+        function rmCat(id, c) { pushU(); const im = imgMap.get(id) || imgs.find(x => x.id === id); if (im) { im.categories = im.categories.filter(x => x !== c); saveDirty(id); updateCardMeta(id); if (typeof _collabSyncUpdate === 'function' && typeof _collabActive === 'function' && _collabActive()) _collabSyncUpdate(id, { categories: im.categories }); } }
+        function addCatTo(id, c) { if (!c.trim()) return; pushU(); const im = imgMap.get(id) || imgs.find(x => x.id === id); if (im && !im.categories.includes(c.trim())) { im.categories.push(c.trim()); addCat(c.trim()); saveDirty(id); updateCardMeta(id); if (typeof _collabSyncUpdate === 'function' && typeof _collabActive === 'function' && _collabActive()) _collabSyncUpdate(id, { categories: im.categories }); } }
+        function editNote(card, id) { const im = imgMap.get(id) || imgs.find(x => x.id === id); if (!im) return; let m = card.querySelector('.meta'); if (!m) { m = document.createElement('div'); m.className = 'meta'; card.appendChild(m) } const ta = document.createElement('textarea'); ta.className = 'note-edit'; ta.value = im.note; m.innerHTML = ''; m.appendChild(ta); ta.focus(); const done = s => { if (s) { pushU(); im.note = ta.value; saveDirty(id); if (typeof _collabSyncUpdate === 'function' && typeof _collabActive === 'function' && _collabActive()) _collabSyncUpdate(id, { note: im.note }); } updateCardMeta(id) }; ta.onblur = () => done(true); ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); done(true) } if (e.key === 'Escape') done(false) } }
         const SORTS = [['newest', ICO.sortNew + ' Newest'], ['oldest', ICO.sortOld + ' Oldest'], ['views', ICO.fire + ' Most Viewed'], ['fav', ICO.star + ' Favourites'], ['custom', ICO.grid + ' Custom']];
         function doSort(a) { const r = [...a]; switch (sort_) { case 'oldest': r.sort((a, b) => a.timestamp - b.timestamp); break; case 'views': r.sort((a, b) => b.viewCount - a.viewCount); break; case 'fav': r.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || b.timestamp - a.timestamp); break; case 'custom': r.sort((a, b) => a.manualOrder - b.manualOrder); return r; default: r.sort((a, b) => b.timestamp - a.timestamp) } return r }
         function doFilter() { let a = imgs; if (query) { const q = query.toLowerCase(); a = a.filter(x => x.filename.toLowerCase().includes(q) || x.note.toLowerCase().includes(q) || x.categories.some(c => c.toLowerCase().includes(q))) } if (filters.size) { if (filters.has('__fav')) { a = a.filter(x => x.fav) } else if (filters.has('__uncat')) { a = a.filter(x => x.categories.length === 0) } else { a = a.filter(x => x.categories.some(c => filters.has(c))) } } if (colorFilter.size) a = a.filter(x => x.palette.some(p => { for (const c of colorFilter) if (matchColor(p, c)) return true; return false })); return a === imgs ? [...imgs] : a }
         function getColCount() { const w = innerWidth; return w < 480 ? 1 : w < 768 ? 2 : w < 1100 ? 3 : w < 1500 ? 4 : 5 }
         let renderTimer = null; let _fbarDirty = true; let _renderQueued = false;
         function queueRender() { if (!_renderQueued) { _renderQueued = true; requestAnimationFrame(() => { _renderQueued = false; render() }) } }
-        function render() { if (renderTimer) cancelAnimationFrame(renderTimer); imgMap.clear(); for (let i = 0; i < imgs.length; i++) imgMap.set(imgs[i].id, imgs[i]); filtered = doFilter(); sorted = doSort(filtered); const n = getColCount(); grid.innerHTML = ''; const frags = []; for (let i = 0; i < n; i++) { const c = document.createElement('div'); c.className = 'grid-col'; grid.appendChild(c); frags.push({ el: c, frag: document.createDocumentFragment() }) } const CHUNK = 150; let idx = 0; function renderChunk() { const end = Math.min(idx + CHUNK, sorted.length); for (let i = idx; i < end; i++) { const c = mkCard(sorted[i]); if (!sorted[i].palette.length) { const ie = c.querySelector('img'); ie.onload = function () { palette(this, sorted[i].id) } } frags[i % n].frag.appendChild(c) } if (idx === 0 || end === sorted.length) { for (let i = 0; i < n; i++)frags[i].el.appendChild(frags[i].frag) } idx = end; if (idx < sorted.length) { renderTimer = requestAnimationFrame(renderChunk) } else { renderTimer = null; for (let i = 0; i < n; i++) { if (frags[i].frag.childNodes.length) frags[i].el.appendChild(frags[i].frag) } } } renderChunk(); morphText($('#imgCount'), filtered.length + ' images'); requestAnimationFrame(buildFBar) }
+        let _renderedCount = 0; let _sentinelObserver = null; let _isLoadingCards = false; const INITIAL_BATCH = 35; const SCROLL_BATCH = 25;
+        function appendMoreCards(count) {
+            if (_renderedCount >= sorted.length) return;
+            const end = Math.min(_renderedCount + count, sorted.length);
+            const cols = grid.querySelectorAll('.grid-col');
+            if (!cols.length) return;
+            const n = cols.length;
+            const frags = Array.from(cols).map(() => document.createDocumentFragment());
+            const needFetch = [];
+            for (let i = _renderedCount; i < end; i++) {
+                const im = sorted[i];
+                const card = mkCard(im);
+                frags[i % n].appendChild(card);
+                if (!im.src) {
+                    const imgEl = card.querySelector('img');
+                    if (imgEl) needFetch.push({ im, imgEl });
+                }
+            }
+            for (let i = 0; i < n; i++) {
+                cols[i].appendChild(frags[i]);
+            }
+            _renderedCount = end;
+
+            if (needFetch.length > 0) {
+                getSharedDB().then(db => {
+                    const tx = db.transaction(STORE, 'readonly');
+                    const store = tx.objectStore(STORE);
+                    needFetch.forEach(({ im, imgEl }) => {
+                        const req = store.get(im.id);
+                        req.onsuccess = () => {
+                            if (req.result && req.result.src) {
+                                const bUrl = getOrMakeBlob(im.id, req.result.src);
+                                im.src = bUrl;
+                                imgEl.src = bUrl;
+                            }
+                        };
+                    });
+                }).catch(() => {});
+            }
+        }
+        function checkSentinel() {
+            if (_isLoadingCards || _renderedCount >= sorted.length) return;
+            const scrollBottom = window.innerHeight + window.scrollY;
+            const docHeight = document.documentElement.scrollHeight;
+            if (scrollBottom >= docHeight - 800) {
+                _isLoadingCards = true;
+                appendMoreCards(SCROLL_BATCH);
+                setTimeout(() => { _isLoadingCards = false; }, 200);
+            }
+        }
+        window.addEventListener('scroll', checkSentinel, { passive: true });
+        function render() {
+            if (renderTimer) cancelAnimationFrame(renderTimer);
+            imgMap.clear();
+            for (let i = 0; i < imgs.length; i++) imgMap.set(imgs[i].id, imgs[i]);
+            filtered = doFilter();
+            sorted = doSort(filtered);
+            const n = getColCount();
+            if (_cardObserver) _cardObserver.disconnect();
+            if (_sentinelObserver) _sentinelObserver.disconnect();
+            grid.innerHTML = '';
+            const cols = [];
+            for (let i = 0; i < n; i++) {
+                const c = document.createElement('div');
+                c.className = 'grid-col';
+                grid.appendChild(c);
+                cols.push(c);
+            }
+            _renderedCount = 0;
+            _isLoadingCards = false;
+            appendMoreCards(INITIAL_BATCH);
+            let sentinel = document.getElementById('grid-sentinel');
+            if (!sentinel) {
+                sentinel = document.createElement('div');
+                sentinel.id = 'grid-sentinel';
+                sentinel.style.cssText = 'height:60px;width:100%;clear:both;pointer-events:none;';
+                const wrap = document.getElementById('grid-wrap');
+                if (wrap) wrap.appendChild(sentinel);
+            }
+            _sentinelObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    checkSentinel();
+                }
+            }, { rootMargin: '200px 0px 400px 0px' });
+            _sentinelObserver.observe(sentinel);
+            morphText($('#imgCount'), filtered.length + ' images');
+            requestAnimationFrame(buildFBar);
+        }
         let _catCache = null; function getAllCats() { if (_catCache && !_fbarDirty) return _catCache; const c = {}; for (let i = 0; i < imgs.length; i++) { const cats_i = imgs[i].categories; for (let j = 0; j < cats_i.length; j++) { c[cats_i[j]] = (c[cats_i[j]] || 0) + 1 } } cats.forEach(v => { if (!c[v]) c[v] = 0 }); _catCache = c; return c }
         function buildFBar() { const ac = getAllCats(); let uncatCount = 0, favCount = 0; for (let i = 0; i < imgs.length; i++) { if (!imgs[i].categories.length) uncatCount++; if (imgs[i].fav) favCount++ } fbar.innerHTML = ''; const mkItem = (label, count, isActive, onClick, extra) => { const b = document.createElement('button'); b.className = 'sb-item' + (isActive ? ' active' : ''); b.innerHTML = '<span>' + label + '</span>' + (count !== null ? '<span class="sb-count">' + count + '</span>' : ''); if (extra) Object.assign(b.style, extra); b.onclick = onClick; return b }; fbar.appendChild(mkItem(ICO.folder + '  All', imgs.length, filters.size === 0, () => { filters.clear(); render() })); fbar.appendChild(mkItem(ICO.fav + '  Favourites', favCount, filters.has('__fav'), () => { if (filters.has('__fav')) filters.delete('__fav'); else { filters.clear(); filters.add('__fav') } render() })); fbar.appendChild(mkItem(ICO.inbox + '  Uncategorized', uncatCount, filters.has('__uncat'), () => { if (filters.has('__uncat')) filters.delete('__uncat'); else { filters.clear(); filters.add('__uncat') } render() })); const sep1 = document.createElement('div'); sep1.className = 'sb-sep'; fbar.appendChild(sep1); const title = document.createElement('div'); title.className = 'sb-title'; title.textContent = 'Categories'; fbar.appendChild(title); Object.keys(ac).sort().forEach(c => { const it = mkItem(c, ac[c], filters.has(c), () => { filters.delete('__uncat'); filters.delete('__fav'); if (filters.has(c)) filters.delete(c); else filters.add(c); render() }); const del = document.createElement('span'); del.className = 'sb-del'; del.textContent = '×'; del.onclick = e => { e.stopPropagation(); openDelModal(c) }; it.querySelector('span').after(del); fbar.appendChild(it) }); const nw = document.createElement('button'); nw.className = 'sb-new'; nw.textContent = '+  New Category'; nw.onclick = openModal; fbar.appendChild(nw) }
         function openModal() { $('#modal-overlay').classList.add('open'); const inp = $('#modalInput'); inp.value = ''; setTimeout(() => inp.focus(), 100) }
@@ -1705,15 +2108,15 @@
         function closeDelModal() { $('#del-modal').style.display = 'none'; pendingDelCat = null }
         $('#delNo').onclick = closeDelModal;
         $('#delYes').onclick = () => { if (pendingDelCat) { delCat(pendingDelCat); filters.delete(pendingDelCat); closeDelModal(); render(); toast('Category deleted') } }; $('#del-modal').onclick = e => { if (e.target.id === 'del-modal') closeDelModal() };
-        function openLB(id) { const i = sorted.findIndex(x => x.id === id); if (i < 0) return; lbIdx = i; const im = sorted[i]; const lb = $('#lightbox'); lb.innerHTML = '<button class="lb-close" id="lbClose">×</button><button class="lb-nav lb-prev" id="lbPrev">←</button><button class="lb-nav lb-next" id="lbNext">â†’</button><div class="lb-img-wrap"><img src="' + im.src + '"></div><div class="lb-info"><div><div class="lb-label">File</div><div class="lb-val">' + im.filename + '</div></div><div><div class="lb-label">Date</div><div class="lb-val">' + new Date(im.timestamp).toLocaleDateString() + '</div></div><div><div class="lb-label">Palette</div><div class="lb-palette">' + im.palette.map(c => '<div style="text-align:center"><div class="lb-swatch" style="background:' + c + '" data-h="' + c + '"></div><div class="lb-swatch-hex">' + c + '</div></div>').join('') + '</div></div><div><div class="lb-label">Categories</div><div class="lb-cats">' + im.categories.map(c => '<span class="chip active">' + c + '</span>').join('') + '</div><div class="lb-add-cat"><input placeholder="Add category..." id="lbCat"><button class="tb-btn" id="lbCatAdd">+</button></div></div><div><div class="lb-label">Note</div><textarea class="lb-note" id="lbNote" placeholder="Add a note...">' + im.note + '</textarea></div><div class="lb-del"><button class="tb-btn danger" id="lbDel">Delete</button></div></div>'; $('#lightbox-overlay').style.display = 'flex'; requestAnimationFrame(() => $('#lightbox-overlay').classList.add('open'));
+        function openLB(id) { const i = sorted.findIndex(x => x.id === id); if (i < 0) return; lbIdx = i; const im = sorted[i]; const lb = $('#lightbox'); lb.innerHTML = '<button class="lb-close" id="lbClose">×</button><button class="lb-nav lb-prev" id="lbPrev">←</button><button class="lb-nav lb-next" id="lbNext">→</button><div class="lb-img-wrap"><img id="lbImg" src="' + (im.src || '') + '"></div><div class="lb-info"><div><div class="lb-label">File</div><div class="lb-val">' + im.filename + '</div></div><div><div class="lb-label">Date</div><div class="lb-val">' + new Date(im.timestamp).toLocaleDateString() + '</div></div><div><div class="lb-label">Palette</div><div class="lb-palette">' + (im.palette || []).map(c => '<div style="text-align:center"><div class="lb-swatch" style="background:' + c + '" data-h="' + c + '"></div><div class="lb-swatch-hex">' + c + '</div></div>').join('') + '</div></div><div><div class="lb-label">Categories</div><div class="lb-cats">' + im.categories.map(c => '<span class="chip active">' + c + '</span>').join('') + '</div><div class="lb-add-cat"><input placeholder="Add category..." id="lbCat"><button class="tb-btn" id="lbCatAdd">+</button></div></div><div><div class="lb-label">Note</div><textarea class="lb-note" id="lbNote" placeholder="Add a note...">' + im.note + '</textarea></div><div class="lb-del"><button class="tb-btn danger" id="lbDel">Delete</button></div></div>'; if (!im.src) { getImgSrc(im.id, true).then(s => { const el = document.getElementById('lbImg'); if (el && s) { const bUrl = getOrMakeBlob(im.id, s); im.src = bUrl; el.src = bUrl; } }); } $('#lightbox-overlay').style.display = 'flex'; requestAnimationFrame(() => $('#lightbox-overlay').classList.add('open'));
           var _lbC = document.getElementById('lbClose'); if (_lbC) _lbC.innerHTML = ICO.close;
           var _lbP = document.getElementById('lbPrev'); if (_lbP) _lbP.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/><' + '/svg>';
           var _lbN = document.getElementById('lbNext'); if (_lbN) _lbN.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/><' + '/svg>'; $('#lbClose').onclick = closeLB; $('#lbPrev').onclick = () => navLB(-1); $('#lbNext').onclick = () => navLB(1); lb.querySelectorAll('.lb-swatch').forEach(s => s.onclick = () => { navigator.clipboard.writeText(s.dataset.h); toast('Copied ' + s.dataset.h, 800) }); const nt = $('#lbNote'), sn = debounce(() => { pushU(); im.note = nt.value; save(); updateCardMeta(im.id) }, 300); nt.oninput = sn; const ci = $('#lbCat'), ca = $('#lbCatAdd'), doAdd = () => { if (ci.value.trim()) { addCatTo(im.id, ci.value.trim()); openLB(im.id) } }; ci.onkeydown = e => { if (e.key === 'Enter') doAdd() }; ca.onclick = doAdd; $('#lbDel').onclick = () => { closeLB(); delImg(im.id) } }
-        function closeLB() { const o = $('#lightbox-overlay'); o.classList.remove('open'); setTimeout(() => { if (!o.classList.contains('open')) o.style.display = 'none' }, 250); lbIdx = -1 }
+        function closeLB() { const o = $('#lightbox-overlay'); o.classList.remove('open'); setTimeout(() => { if (!o.classList.contains('open')) { o.style.display = 'none'; const lb = $('#lightbox'); if (lb) lb.innerHTML = ''; } }, 250); lbIdx = -1 }
         function navLB(d) { if (lbIdx < 0) return; lbIdx = (lbIdx + d + sorted.length) % sorted.length; openLB(sorted[lbIdx].id) }
         $('#lbClose').onclick = closeLB; $('#lbPrev').onclick = () => navLB(-1); $('#lbNext').onclick = () => navLB(1);
         $('#lightbox-overlay').onclick = e => { if (e.target.id === 'lightbox-overlay') closeLB() };
-        function showCtx(e, id) { ctxId = id; let snapped = false; const snap = () => { if (!snapped) { pushU(); snapped = true } }; const m = $('#ctx-menu'), im = imgMap.get(id), ks = cats.slice().sort(); if (!im) return; const batch = selected.size && selected.has(id) ? [...selected] : null; const targets = batch ? imgs.filter(x => selected.has(x.id)) : [im]; let ci = ''; ks.forEach(c => { const has = im.categories.includes(c); ci += '<div class="ctx-item ctx-ci" data-c="' + c + '" style="padding-left:24px">' + (has ? ICO.checkOn : ICO.checkOff) + ' ' + c + '</div>' }); ci += '<div class="ctx-input"><input placeholder="+ New category..." id="ctxCat"></div>'; m.innerHTML = '<div class="ctx-item" data-a="fav">' + (im.fav ? ICO.star + ' Unfavourite' : ICO.starO + ' Favourite') + '</div><div class="ctx-item" data-a="note">' + ICO.pencil + ' Note</div><div class="ctx-sep"></div><div class="ctx-header">Categories' + (batch ? ' <span style="opacity:.5;font-size:10px">(' + batch.length + ' selected)</span>' : '') + '</div>' + ci + '<div class="ctx-sep"></div><div class="ctx-item" data-a="copy">' + ICO.clip + ' Copy</div><div class="ctx-item" data-a="dl">' + ICO.dl + ' Download</div><div class="ctx-item" data-a="dup">' + ICO.dup + ' Duplicate</div><div class="ctx-sep"></div><div class="ctx-item" data-a="del">' + ICO.trash + ' Delete</div>'; m.style.display = 'block'; m.style.left = Math.min(e.clientX, innerWidth - 250) + 'px'; m.style.top = Math.min(e.clientY, innerHeight - m.offsetHeight - 10) + 'px'; m.querySelectorAll('.ctx-ci').forEach(el => { el.onclick = ev => { ev.stopPropagation(); snap(); const c = el.dataset.c; if (im.categories.includes(c)) { targets.forEach(t => { t.categories = t.categories.filter(x => x !== c) }); el.innerHTML = ICO.checkOff + ' ' + c } else { targets.forEach(t => { if (!t.categories.includes(c)) { t.categories.push(c); addCat(c) } }); el.innerHTML = ICO.checkOn + ' ' + c } saveFew(targets.map(t => t.id)); targets.forEach(t => updateCardMeta(t.id)) } }); const ci2 = $('#ctxCat'); if (ci2) { ci2.onclick = ev => ev.stopPropagation(); ci2.onkeydown = ev => { if (ev.key === 'Enter' && ci2.value.trim()) { snap(); const c = ci2.value.trim(); targets.forEach(t => { if (!t.categories.includes(c)) { t.categories.push(c); addCat(c) } }); saveFew(targets.map(t => t.id)); targets.forEach(t => updateCardMeta(t.id)); closeCtx(); } } } m.querySelectorAll('.ctx-item:not(.ctx-ci)').forEach(el => { el.onclick = () => { const a = el.dataset.a; if (!a) return; closeCtx(); if (a === 'fav') { snap(); targets.forEach(x => { x.fav = !x.fav; const card = document.querySelector('[data-id="' + x.id + '"]'); if (card) { const btn = card.querySelector('.ov-fav'); if (btn) btn.innerHTML = x.fav ? ICO.star : ICO.starO; const badges = card.querySelector('.badges'); if (x.fav) { if (!badges.querySelector('.badge-fav')) { const b = document.createElement('div'); b.className = 'badge-icon badge-fav'; b.innerHTML = ICO.star; badges.prepend(b) } } else { const bf = badges.querySelector('.badge-fav'); if (bf) bf.remove() } } }); save() } else if (a === 'note') { const c = $('[data-id="' + id + '"]'); if (c) editNote(c, id) } else if (a === 'copy') { fetch(im.src).then(r => r.blob()).then(b => { navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); toast('Copied') }).catch(() => toast('Copy failed')) } else if (a === 'dl') { downloadImg(im) } else if (a === 'dup') { snap(); targets.forEach(t => { const ni = { ...t, id: uid(), timestamp: Date.now(), manualOrder: imgs.length }; imgs.push(ni); imgMap.set(ni.id, ni) }); save(); render(); toast('Duplicated ' + targets.length) } else if (a === 'del') { snap(); const ids = new Set(targets.map(t => t.id)); imgs = imgs.filter(x => !ids.has(x.id)); ids.forEach(i => imgMap.delete(i)); selected.clear(); updSelBar(); save(); render(); toast('Deleted ' + ids.size) } } }) } function closeCtx() { $('#ctx-menu').style.display = 'none'; ctxId = null }
+        function showCtx(e, id) { ctxId = id; let snapped = false; const snap = () => { if (!snapped) { pushU(); snapped = true } }; const m = $('#ctx-menu'), im = imgMap.get(id), ks = cats.slice().sort(); if (!im) return; const batch = selected.size && selected.has(id) ? [...selected] : null; const targets = batch ? imgs.filter(x => selected.has(x.id)) : [im]; let ci = ''; ks.forEach(c => { const has = im.categories.includes(c); ci += '<div class="ctx-item ctx-ci" data-c="' + c + '" style="padding-left:24px">' + (has ? ICO.checkOn : ICO.checkOff) + ' ' + c + '</div>' }); ci += '<div class="ctx-input"><input placeholder="+ New category..." id="ctxCat"></div>'; m.innerHTML = '<div class="ctx-item" data-a="fav">' + (im.fav ? ICO.star + ' Unfavourite' : ICO.starO + ' Favourite') + '</div><div class="ctx-item" data-a="note">' + ICO.pencil + ' Note</div><div class="ctx-sep"></div><div class="ctx-header">Categories' + (batch ? ' <span style="opacity:.5;font-size:10px">(' + batch.length + ' selected)</span>' : '') + '</div>' + ci + '<div class="ctx-sep"></div><div class="ctx-item" data-a="copy">' + ICO.clip + ' Copy</div><div class="ctx-item" data-a="dl">' + ICO.dl + ' Download</div><div class="ctx-item" data-a="dup">' + ICO.dup + ' Duplicate</div><div class="ctx-sep"></div><div class="ctx-item" data-a="del">' + ICO.trash + ' Delete</div>'; m.style.display = 'block'; m.style.left = Math.min(e.clientX, innerWidth - 250) + 'px'; m.style.top = Math.min(e.clientY, innerHeight - m.offsetHeight - 10) + 'px'; m.querySelectorAll('.ctx-ci').forEach(el => { el.onclick = ev => { ev.stopPropagation(); snap(); const c = el.dataset.c; if (im.categories.includes(c)) { targets.forEach(t => { t.categories = t.categories.filter(x => x !== c) }); el.innerHTML = ICO.checkOff + ' ' + c } else { targets.forEach(t => { if (!t.categories.includes(c)) { t.categories.push(c); addCat(c) } }); el.innerHTML = ICO.checkOn + ' ' + c } saveFew(targets.map(t => t.id)); targets.forEach(t => updateCardMeta(t.id)) } }); const ci2 = $('#ctxCat'); if (ci2) { ci2.onclick = ev => ev.stopPropagation(); ci2.onkeydown = ev => { if (ev.key === 'Enter' && ci2.value.trim()) { snap(); const c = ci2.value.trim(); targets.forEach(t => { if (!t.categories.includes(c)) { t.categories.push(c); addCat(c) } }); saveFew(targets.map(t => t.id)); targets.forEach(t => updateCardMeta(t.id)); closeCtx(); } } } m.querySelectorAll('.ctx-item:not(.ctx-ci)').forEach(el => { el.onclick = () => { const a = el.dataset.a; if (!a) return; closeCtx(); if (a === 'fav') { snap(); targets.forEach(x => { x.fav = !x.fav; const card = document.querySelector('[data-id="' + x.id + '"]'); if (card) { const btn = card.querySelector('.ov-fav'); if (btn) btn.innerHTML = x.fav ? ICO.star : ICO.starO; const badges = card.querySelector('.badges'); if (x.fav) { if (!badges.querySelector('.badge-fav')) { const b = document.createElement('div'); b.className = 'badge-icon badge-fav'; b.innerHTML = ICO.star; badges.prepend(b) } } else { const bf = badges.querySelector('.badge-fav'); if (bf) bf.remove() } } }); save() } else if (a === 'note') { const c = $('[data-id="' + id + '"]'); if (c) editNote(c, id) } else if (a === 'copy') { getImgSrc(im.id, true).then(s => { if (!s) return toast('Copy failed'); fetch(s).then(r => r.blob()).then(b => { navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); toast('Copied') }).catch(() => toast('Copy failed')); }); } else if (a === 'dl') { downloadImg(im) } else if (a === 'dup') { snap(); targets.forEach(async t => { const src = await getImgSrc(t.id, true); const niRecord = { ...t, id: uid(), src, timestamp: Date.now(), manualOrder: imgs.length }; dbSaveNew(niRecord); setSrcCache(niRecord.id, src); const ni = { ...niRecord, src: dataUrlToBlobUrl(src) }; imgs.push(ni); imgMap.set(ni.id, ni); render(); }); toast('Duplicated ' + targets.length) } else if (a === 'del') { snap(); const ids = new Set(targets.map(t => t.id)); imgs = imgs.filter(x => !ids.has(x.id)); ids.forEach(i => { imgMap.delete(i); _srcMemCache.delete(i); dbDelete(i).catch(() => {}); if (typeof _collabSyncDelete === 'function' && typeof _collabActive === 'function' && _collabActive()) _collabSyncDelete(i); }); selected.clear(); updSelBar(); _fullSave = true; save(); render(); toast('Deleted ' + ids.size) } } }) } function closeCtx() { $('#ctx-menu').style.display = 'none'; ctxId = null }
         document.addEventListener('click', e => { if (!e.target.closest('#ctx-menu')) closeCtx() });
         document.onkeydown = e => { if (e.key === 'Escape') { closeCtx(); closeLB(); closeModal(); $('#stats-drawer').classList.remove('open') } const c = e.ctrlKey || e.metaKey; if (c && e.key === 'z' && !e.shiftKey) { e.preventDefault(); doUndo() } if (c && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); doRedo() } if (e.key === 'ArrowLeft' && lbIdx >= 0) navLB(-1); if (e.key === 'ArrowRight' && lbIdx >= 0) navLB(1); if (e.key === '/' && !e.target.closest('input,textarea')) { e.preventDefault(); $('#search').focus() } };
         let dragC = 0;
@@ -1734,16 +2137,16 @@
         $('#dlExtBtn').onclick = () => { window.open('extension/', '_blank'); toast('Open chrome://extensions > Load unpacked > select the extension folder', 5000) };
         $('#showcaseBtn').onclick = () => { window.location.href = 'showcase.html'; };
         const clrBtn = $('#clearBtn');
-        clrBtn.onclick = () => { if (clrBtn.classList.contains('confirm')) { pushU(); imgs = []; hashSet.clear(); imgMap.clear(); _fullSave = true; save(); grid.innerHTML = ''; render(); clrBtn.classList.remove('confirm'); morphText(clrBtn, 'Clear All Images'); toast('Cleared') } else { clrBtn.classList.add('confirm'); morphText(clrBtn, 'Sure?'); clearTimeout(clrT); clrT = setTimeout(() => { clrBtn.classList.remove('confirm'); morphText(clrBtn, 'Clear All Images') }, 3e3) } };
-        $('#statsBtn').onclick = () => { $('#settings-drawer').classList.remove('open'); const d = $('#stats-drawer'); d.classList.toggle('open'); if (!d.classList.contains('open')) return; const t = imgs.length, cs = {}; imgs.forEach(x => x.categories.forEach(c => { cs[c] = (cs[c] || 0) + 1 })); const tc = Object.entries(cs).sort((a, b) => b[1] - a[1]).slice(0, 5), mx = tc.length ? tc[0][1] : 1; const tv = [...imgs].sort((a, b) => b.viewCount - a.viewCount).slice(0, 3); d.innerHTML = '<div class="st-section"><div class="st-title">Overview</div><div class="st-big">' + t + '</div><div style="font-size:13px;color:var(--muted)">Total images</div></div><div class="st-section"><div class="st-title">Top Categories</div>' + (tc.map(([c, n]) => '<div class="st-row"><span style="font-size:13px;min-width:80px">' + c + '</span><div class="st-bar-bg"><div class="st-bar-fill" style="width:' + n / mx * 100 + '%"></div></div><span style="font-size:12px;color:var(--muted)">' + n + '</span></div>').join('') || '<div style="color:var(--muted);font-size:13px">No categories</div>') + '</div><div class="st-section"><div class="st-title">Most Viewed</div><div class="st-thumbs">' + tv.map(x => '<img class="st-thumb" src="' + x.src + '" data-id="' + x.id + '">').join('') + '</div></div>'; d.querySelectorAll('.st-thumb').forEach(t => t.onclick = () => openLB(t.dataset.id)) };
+        clrBtn.onclick = () => { if (clrBtn.classList.contains('confirm')) { pushU(); imgs = []; hashSet.clear(); imgMap.clear(); _srcMemCache.clear(); _fullSave = true; save(); grid.innerHTML = ''; render(); clrBtn.classList.remove('confirm'); morphText(clrBtn, 'Clear All Images'); toast('Cleared') } else { clrBtn.classList.add('confirm'); morphText(clrBtn, 'Sure?'); clearTimeout(clrT); clrT = setTimeout(() => { clrBtn.classList.remove('confirm'); morphText(clrBtn, 'Clear All Images') }, 3e3) } };
+        $('#statsBtn').onclick = () => { $('#settings-drawer').classList.remove('open'); const d = $('#stats-drawer'); d.classList.toggle('open'); if (!d.classList.contains('open')) return; const t = imgs.length, cs = {}; imgs.forEach(x => (x.categories || []).forEach(c => { cs[c] = (cs[c] || 0) + 1 })); const tc = Object.entries(cs).sort((a, b) => b[1] - a[1]).slice(0, 5), mx = tc.length ? tc[0][1] : 1; const tv = [...imgs].sort((a, b) => b.viewCount - a.viewCount).slice(0, 3); d.innerHTML = '<div class="st-section"><div class="st-title">Overview</div><div class="st-big">' + t + '</div><div style="font-size:13px;color:var(--muted)">Total images</div></div><div class="st-section"><div class="st-title">Top Categories</div>' + (tc.map(([c, n]) => '<div class="st-row"><span style="font-size:13px;min-width:80px">' + c + '</span><div class="st-bar-bg"><div class="st-bar-fill" style="width:' + n / mx * 100 + '%"></div></div><span style="font-size:12px;color:var(--muted)">' + n + '</span></div>').join('') || '<div style="color:var(--muted);font-size:13px">No categories</div>') + '</div><div class="st-section"><div class="st-title">Most Viewed</div><div class="st-thumbs">' + tv.map(x => '<img class="st-thumb" src="' + (x.src || '') + '" data-id="' + x.id + '">').join('') + '</div></div>'; d.querySelectorAll('.st-thumb').forEach(t => { if (!t.src) { getImgSrc(t.dataset.id).then(src => { if (src) t.src = src; }); } t.onclick = () => openLB(t.dataset.id); }); };
         function convertToPng(dataUrl) { return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0); cv.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png'); }; img.onerror = () => reject(new Error('load failed')); img.src = dataUrl; }); }
-        $('#exportBtn').onclick = async () => { const list = imgs; if (!list.length) return toast('No images'); showProg('Exporting ' + list.length + ' images...', list.length); try { const crcTbl = []; for (let n = 0; n < 256; n++) { let k = n; for (let j = 0; j < 8; j++) k = k & 1 ? 0xEDB88320 ^ (k >>> 1) : k >>> 1; crcTbl[n] = k } function crc32(buf) { let c = -1; for (let i = 0; i < buf.length; i++) c = crcTbl[(c ^ buf[i]) & 0xFF] ^ (c >>> 8); return (c ^ -1) >>> 0 } const w = (v, n) => { const a = []; for (let i = 0; i < n; i++) { a.push(v & 0xFF); v >>>= 8 } return a }; const enc = new TextEncoder(); const okTypes = ['image/png','image/jpeg','image/gif']; const extFor = {'image/png':'.png','image/jpeg':'.jpg','image/gif':'.gif'}; const used = {}; const blobParts = []; const cdParts = []; let offset = 0; for (let idx = 0; idx < list.length; idx++) { const im = list[idx]; const mm = im.src.match(/^data:(image\/[^;]+)/); const mime = mm ? mm[1] : 'image/png'; let base = im.filename || 'image'; const ld = base.lastIndexOf('.'); if (ld > 0) base = base.substring(0, ld); let fn, data; if (!okTypes.includes(mime)) { const blob = await convertToPng(im.src); data = new Uint8Array(await blob.arrayBuffer()); fn = base + '.png'; } else { fn = base + (extFor[mime]||'.png'); const resp = await fetch(im.src); data = new Uint8Array(await resp.arrayBuffer()); } if (used[fn]) fn = base + '_' + idx + '.png'; used[fn] = true; const nameBytes = enc.encode(fn); const crc = crc32(data); const local = new Uint8Array([0x50,0x4B,0x03,0x04,10,0,0,0,0,0,0,0,0,0,...w(crc,4),...w(data.length,4),...w(data.length,4),...w(nameBytes.length,2),0,0]); blobParts.push(new Blob([local, nameBytes, data])); const cd = new Uint8Array([0x50,0x4B,0x01,0x02,20,0,10,0,0,0,0,0,0,0,0,0,...w(crc,4),...w(data.length,4),...w(data.length,4),...w(nameBytes.length,2),0,0,0,0,0,0,0,0,0,0,...w(0,4),...w(offset,4)]); cdParts.push(cd, nameBytes); offset += local.length + nameBytes.length + data.length; if (idx % 5 === 0) { updProg(idx+1, list.length); await new Promise(r => setTimeout(r, 0)) } } const cdOffset = offset; let cdSize = 0; cdParts.forEach(c => cdSize += c.length); const cnt = list.length; const eocd = new Uint8Array([0x50,0x4B,0x05,0x06,0,0,0,0,...w(cnt,2),...w(cnt,2),...w(cdSize,4),...w(cdOffset,4),0,0]); blobParts.push(new Blob(cdParts)); blobParts.push(eocd); const blob = new Blob(blobParts, {type:'application/zip'}); const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = 'moodboard-' + new Date().toISOString().slice(0,10) + '.zip'; a.click(); setTimeout(() => URL.revokeObjectURL(u), 30000); hideProg(); toast('Downloaded ' + cnt + ' images (' + (blob.size/1048576).toFixed(0) + ' MB)') } catch(e) { hideProg(); toast('Export failed: ' + e.message); console.error(e) } };
-        $('#backupBtn').onclick = () => { if (!imgs.length) return toast('No data'); toast('Creating backup...'); setTimeout(() => { try { const chunks = []; chunks.push('{"version":2,"timestamp":' + Date.now() + ',"categories":' + JSON.stringify(cats) + ',"sort":"' + sort_ + '","images":['); imgs.forEach((im, i) => { chunks.push((i ? ',' : '') + JSON.stringify(im)) }); chunks.push(']}'); const blob = new Blob(chunks, { type: 'application/json' }); const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = 'moodboard-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); URL.revokeObjectURL(u); toast('Backup saved') } catch (e) { toast('Backup failed: ' + e.message) } }, 100) };
+        $('#exportBtn').onclick = async () => { const list = imgs; if (!list.length) return toast('No images'); showProg('Exporting ' + list.length + ' images...', list.length); try { const crcTbl = []; for (let n = 0; n < 256; n++) { let k = n; for (let j = 0; j < 8; j++) k = k & 1 ? 0xEDB88320 ^ (k >>> 1) : k >>> 1; crcTbl[n] = k } function crc32(buf) { let c = -1; for (let i = 0; i < buf.length; i++) c = crcTbl[(c ^ buf[i]) & 0xFF] ^ (c >>> 8); return (c ^ -1) >>> 0 } const w = (v, n) => { const a = []; for (let i = 0; i < n; i++) { a.push(v & 0xFF); v >>>= 8 } return a }; const enc = new TextEncoder(); const okTypes = ['image/png','image/jpeg','image/gif']; const extFor = {'image/png':'.png','image/jpeg':'.jpg','image/gif':'.gif'}; const used = {}; const blobParts = []; const cdParts = []; let offset = 0; for (let idx = 0; idx < list.length; idx++) { const im = list[idx]; const src = await getImgSrc(im.id, true); const mm = src.match(/^data:(image\/[^;]+)/); const mime = mm ? mm[1] : 'image/png'; let base = im.filename || 'image'; const ld = base.lastIndexOf('.'); if (ld > 0) base = base.substring(0, ld); let fn, data; if (!okTypes.includes(mime)) { const blob = await convertToPng(src); data = new Uint8Array(await blob.arrayBuffer()); fn = base + '.png'; } else { fn = base + (extFor[mime]||'.png'); const resp = await fetch(src); data = new Uint8Array(await resp.arrayBuffer()); } if (used[fn]) fn = base + '_' + idx + '.png'; used[fn] = true; const nameBytes = enc.encode(fn); const crc = crc32(data); const local = new Uint8Array([0x50,0x4B,0x03,0x04,10,0,0,0,0,0,0,0,0,0,...w(crc,4),...w(data.length,4),...w(data.length,4),...w(nameBytes.length,2),0,0]); blobParts.push(new Blob([local, nameBytes, data])); const cd = new Uint8Array([0x50,0x4B,0x01,0x02,20,0,10,0,0,0,0,0,0,0,0,0,...w(crc,4),...w(data.length,4),...w(data.length,4),...w(nameBytes.length,2),0,0,0,0,0,0,0,0,0,0,...w(0,4),...w(offset,4)]); cdParts.push(cd, nameBytes); offset += local.length + nameBytes.length + data.length; if (idx % 5 === 0) { updProg(idx+1, list.length); await new Promise(r => setTimeout(r, 0)) } } const cdOffset = offset; let cdSize = 0; cdParts.forEach(c => cdSize += c.length); const cnt = list.length; const eocd = new Uint8Array([0x50,0x4B,0x05,0x06,0,0,0,0,...w(cnt,2),...w(cnt,2),...w(cdSize,4),...w(cdOffset,4),0,0]); blobParts.push(new Blob(cdParts)); blobParts.push(eocd); const blob = new Blob(blobParts, {type:'application/zip'}); const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = 'moodboard-' + new Date().toISOString().slice(0,10) + '.zip'; a.click(); setTimeout(() => URL.revokeObjectURL(u), 30000); hideProg(); toast('Downloaded ' + cnt + ' images (' + (blob.size/1048576).toFixed(0) + ' MB)') } catch(e) { hideProg(); toast('Export failed: ' + e.message); console.error(e) } };
+        $('#backupBtn').onclick = () => { if (!imgs.length) return toast('No data'); toast('Creating backup...'); setTimeout(async () => { try { const db = await openDB(); const tx = db.transaction(STORE, 'readonly'); const all = await new Promise(ok => { const r = tx.objectStore(STORE).getAll(); r.onsuccess = () => ok(r.result || []); r.onerror = () => ok([]); }); db.close(); const chunks = []; chunks.push('{"version":2,"timestamp":' + Date.now() + ',"categories":' + JSON.stringify(cats) + ',"sort":"' + sort_ + '","images":['); all.forEach((im, i) => { chunks.push((i ? ',' : '') + JSON.stringify(im)) }); chunks.push(']}'); const blob = new Blob(chunks, { type: 'application/json' }); const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = 'moodboard-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); URL.revokeObjectURL(u); toast('Backup saved') } catch (e) { toast('Backup failed: ' + e.message) } }, 100) };
         $('#restoreBtn').onclick = () => { window.location.href = 'restore.html'; };
         $('#restoreInput').onchange = e => { const f = e.target.files[0]; if (!f) return; e.target.value = ''; toast('Reading backup (' + (f.size / 1048576).toFixed(0) + ' MB)...'); const stream = f.stream().getReader(); const dec = new TextDecoder(); let buf = '', meta = null, parsed = [], inImages = false, depth = 0, inStr = false, esc = false, objStart = -1; function processBuf() { for (let i = 0; i < buf.length; i++) { const ch = buf[i]; if (esc) { esc = false; continue } if (ch === '\\\\') { esc = true; continue } if (ch === '"') { inStr = !inStr; continue } if (inStr) continue; if (!inImages) { if (buf.indexOf('"images"', i) === i) { const bracket = buf.indexOf('[', i); if (bracket > -1) { inImages = true; i = bracket; depth = 0; continue } } } else { if (ch === '{') { if (depth === 0) objStart = i; depth++ } else if (ch === '}') { depth--; if (depth === 0 && objStart > -1) { try { parsed.push(JSON.parse(buf.substring(objStart, i + 1))) } catch (e) { } objStart = -1 } } } } if (inImages && objStart > -1) { buf = buf.substring(objStart); objStart = 0 } else if (inImages) { buf = '' } } function pump() { stream.read().then(({ done, value }) => { if (value) buf += dec.decode(value, { stream: !done }); processBuf(); updProg(parsed.length, parsed.length + 100); if (!done) { requestAnimationFrame(pump) } else { if (!meta) { try { const m = (buf.match(/"version"\s*:\s*(\d+)/) || [])[1]; const c = (buf.match(/"categories"\s*:\s*(\[[^\]]*\])/) || [])[1]; const s = (buf.match(/"sort"\s*:\s*"([^"]*)"/) || [])[1]; meta = { categories: c ? JSON.parse(c) : [], sort: s || 'newest' } } catch (e) { meta = { categories: [], sort: 'newest' } } } if (!parsed.length) { hideProg(); toast('No images found in backup'); return } if (!confirm('Restore ' + parsed.length + ' images? This replaces your current board.')) { hideProg(); return } pushU(); imgs = parsed; if (meta.categories) { cats = meta.categories; saveCats() } sort_ = meta.sort; $('#sortLabel').innerHTML = (SORTS.find(s => s[0] === sort_) || SORTS[0])[1]; save(); render(); updStorage(); hideProg(); toast('Restored ' + parsed.length + ' images!') } }) } showProg('Restoring backup...', 100); pump() };
         $('#importClipBtn').onclick = () => $('#clipInput').click();
-        $('#clipInput').onchange = e => { const f = e.target.files[0]; if (!f) return; e.target.value = ''; const rd = new FileReader(); rd.onload = () => { try { const data = JSON.parse(rd.result); if (!data.images || !Array.isArray(data.images)) throw new Error('Invalid file'); pushU(); let added = 0, skip = 0; data.images.forEach(im => { const h = im.hash || hash(im.src); if (!hashSet.has(h)) { hashSet.add(h); im.id = uid(); im.hash = h; im.manualOrder = imgs.length; imgs.push(im); imgMap.set(im.id, im); _dirty.add(im.id); added++ } else skip++ }); if (data.categories) data.categories.forEach(c => addCat(c)); save(); render(); updStorage(); toast('Imported ' + added + (skip ? ' (' + skip + ' dupes)' : '')) } catch (err) { toast('Invalid file: ' + err.message) } }; rd.readAsText(f) };
-        function autoBackup() { if (!imgs.length) return; const DAY = 24 * 60 * 60 * 1000; const last = parseInt(localStorage.getItem('lastAutoBackup') || '0'); if (Date.now() - last < DAY) return; toast('Auto-backup starting...'); setTimeout(() => { try { const chunks = []; chunks.push('{"version":2,"timestamp":' + Date.now() + ',"categories":' + JSON.stringify(cats) + ',"sort":"' + sort_ + '","images":['); imgs.forEach((im, i) => { chunks.push((i ? ',' : '') + JSON.stringify(im)) }); chunks.push(']}'); const blob = new Blob(chunks, { type: 'application/json' }); const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = 'moodboard-backup.json'; a.click(); URL.revokeObjectURL(u); localStorage.setItem('lastAutoBackup', Date.now().toString()); toast('Daily backup saved!') } catch (e) { toast('Auto-backup failed: ' + e.message) } }, 500) }
+        $('#clipInput').onchange = e => { const f = e.target.files[0]; if (!f) return; e.target.value = ''; const rd = new FileReader(); rd.onload = () => { try { const data = JSON.parse(rd.result); if (!data.images || !Array.isArray(data.images)) throw new Error('Invalid file'); pushU(); let added = 0, skip = 0; data.images.forEach(im => { const h = im.hash || hash(im.src); if (!hashSet.has(h)) { hashSet.add(h); im.id = uid(); im.hash = h; im.manualOrder = imgs.length; dbSaveNew(im); const mem = { ...im }; imgs.push(mem); imgMap.set(mem.id, mem); added++ } else skip++ }); if (data.categories) data.categories.forEach(c => addCat(c)); render(); updStorage(); toast('Imported ' + added + (skip ? ' (' + skip + ' dupes)' : '')) } catch (err) { toast('Invalid file: ' + err.message) } }; rd.readAsText(f) };
+        function autoBackup() { if (!imgs.length) return; const DAY = 24 * 60 * 60 * 1000; const last = parseInt(localStorage.getItem('lastAutoBackup') || '0'); if (Date.now() - last < DAY) return; toast('Auto-backup starting...'); setTimeout(async () => { try { const db = await openDB(); const tx = db.transaction(STORE, 'readonly'); const all = await new Promise(ok => { const r = tx.objectStore(STORE).getAll(); r.onsuccess = () => ok(r.result || []); r.onerror = () => ok([]); }); db.close(); const chunks = []; chunks.push('{"version":2,"timestamp":' + Date.now() + ',"categories":' + JSON.stringify(cats) + ',"sort":"' + sort_ + '","images":['); all.forEach((im, i) => { chunks.push((i ? ',' : '') + JSON.stringify(im)) }); chunks.push(']}'); const blob = new Blob(chunks, { type: 'application/json' }); const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = 'moodboard-backup.json'; a.click(); URL.revokeObjectURL(u); localStorage.setItem('lastAutoBackup', Date.now().toString()); toast('Daily backup saved!') } catch (e) { toast('Auto-backup failed: ' + e.message) } }, 500) }
 
         // sidebar scrolls vertically natively
         let _lastCols = 0;
@@ -1761,24 +2164,28 @@
         cats.forEach(c => ALLOWED_CATS.add(c)); saveAllowedCats();
         dbLoad().then(d => {
             const seenKeys = new Set(), cleanD = [], dupIds = [];
-            for (const item of d) {
-                const k = item.hash || (item.src ? hash(item.src) : item.id);
+            for (let idx = 0; idx < d.length; idx++) {
+                const item = d[idx];
+                const k = item.hash || item.id;
                 if (seenKeys.has(k)) {
                     dupIds.push(item.id);
                 } else {
                     seenKeys.add(k);
-                    if (!item.hash && item.src) item.hash = k;
+                    if (!item.categories) item.categories = [];
                     cleanD.push(item);
                 }
             }
             if (dupIds.length) {
                 dupIds.forEach(id => dbDelete(id).catch(() => {}));
-                d = cleanD;
             }
-            imgs = d;
+            imgs = cleanD;
+            d = null;
+            cleanD = null;
+            seenKeys.clear();
             imgs.forEach(i => {
                 if (i.pinned !== undefined) { i.fav = i.pinned; delete i.pinned }
                 if (i.fav === undefined) i.fav = false;
+                if (!i.categories) i.categories = [];
                 if (i.hash) hashSet.add(i.hash);
                 imgMap.set(i.id, i)
             });
@@ -1786,14 +2193,18 @@
             sort_ = localStorage.getItem(SORTK) || 'newest';
             if (sort_ === 'pinned') sort_ = 'fav';
             $('#sortLabel').innerHTML = (SORTS.find(s => s[0] === sort_) || SORTS[0])[1];
-            imgs.forEach(i => i.categories.forEach(c => { addCat(c); ALLOWED_CATS.add(c) }));
+            imgs.forEach(i => (i.categories || []).forEach(c => { addCat(c); ALLOWED_CATS.add(c) }));
             saveAllowedCats();
             _lastCols = getColCount();
             render();
             updStorage();
-            setTimeout(autoBackup, 3000);
             window.__moodboardReady = true
-        }).catch(() => { imgs = []; render(); window.__moodboardReady = true });
+        }).catch(err => {
+            console.error('dbLoad error:', err);
+            toast('Database load error: ' + (err && err.message || err));
+            render();
+            window.__moodboardReady = true;
+        });
 
         // â”€â”€â”€ FIGMA-STYLE MARQUEE SELECTION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // Click+drag to select. Real-time highlighting.
@@ -1991,6 +2402,47 @@
           el = document.getElementById('sortLabel'); if (el) { var sl = (SORTS.find(function(s){return s[0]===sort_}) || SORTS[0]); if (sl) el.innerHTML = sl[1]; }
         })();
     </script>
+    <!-- Collaboration Modal -->
+    <div id="collab-modal">
+        <div class="collab-modal-box">
+            <div class="collab-modal-title">
+                <span>Collaborate</span>
+                <button class="collab-modal-close" id="collab-modal-close">×</button>
+            </div>
+            <div class="collab-tabs">
+                <button class="collab-tab-btn active" data-tab="collab-create-panel">Create Room</button>
+                <button class="collab-tab-btn" data-tab="collab-join-panel">Join Room</button>
+            </div>
+            <div id="collab-create-panel" class="collab-tab-panel active" style="display:block">
+                <div class="collab-field">
+                    <label>Permission for guests</label>
+                    <select id="collab-perm-select">
+                        <option value="full">🔓 Full Access — add, delete, categorize</option>
+                        <option value="editor">✏️ Editor — categorize, note, favourite only</option>
+                        <option value="view">👁️ View Only — browse only</option>
+                    </select>
+                </div>
+                <button class="collab-action-btn green" id="collab-create-btn">Create & Copy Link</button>
+                <div class="collab-hint">All current images will be uploaded to the room</div>
+            </div>
+            <div id="collab-join-panel" class="collab-tab-panel">
+                <div class="collab-field">
+                    <label>Room code</label>
+                    <input id="collab-join-input" placeholder="e.g. AB3X9K" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px;font-family:'SF Mono',monospace">
+                </div>
+                <button class="collab-action-btn blue" id="collab-join-btn">Join Room</button>
+                <div class="collab-hint">Enter the code shared with you</div>
+            </div>
+        </div>
+    </div>
+    <!-- Firebase SDK (compat — no build step needed) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="collab.js"></script>
 </body>
 
 </html>

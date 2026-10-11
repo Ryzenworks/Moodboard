@@ -1,0 +1,34 @@
+// Firestore Security Rules for Moodboard Collaboration
+// Deploy these in Firebase Console > Firestore Database > Rules
+//
+// These rules enforce the permission model:
+// - Anyone can read rooms (to check if they exist)
+// - Authenticated users can create rooms
+// - Only the owner can delete a room
+// - Image writes are controlled by the room's permission level
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /rooms/{roomId} {
+      // Anyone can read room metadata
+      allow read: if true;
+      // Only owner can delete room
+      allow delete: if request.auth.uid == resource.data.owner;
+      // Authenticated users can create rooms
+      allow create: if request.auth != null;
+      // Owner can update room settings
+      allow update: if request.auth.uid == resource.data.owner;
+      
+      match /images/{imageId} {
+        allow read: if true;
+        // Full permission: create and delete
+        allow create, delete: if get(/databases/$(database)/documents/rooms/$(roomId)).data.permission == 'full'
+                              || request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.owner;
+        // Editor permission: update metadata
+        allow update: if get(/databases/$(database)/documents/rooms/$(roomId)).data.permission in ['editor', 'full']
+                      || request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.owner;
+      }
+    }
+  }
+}
